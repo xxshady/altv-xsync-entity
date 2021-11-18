@@ -1,0 +1,1 @@
+export { InternalXSyncEntity } from "./class"

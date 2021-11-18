@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ESNext"],
+    "typeRoots": [
+      "../node_modules/@altv",
+    ],
+  },
+  "include": [
+    "./src/**/*"
+  ],
+}

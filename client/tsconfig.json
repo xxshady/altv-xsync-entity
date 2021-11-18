@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ESNext"],
+    "typeRoots": [
+      "../node_modules/@altv",
+      "../node_modules/altv-xsync-entity-shared/dist/main"
+    ],
+  },
+  "include": [
+    "./src/**/*"
+  ],
+}

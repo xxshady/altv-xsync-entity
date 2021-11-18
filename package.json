@@ -1,0 +1,47 @@
+{
+  "name": "altv-xsync-entity",
+  "author": "xshady",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "build:shared": "node --es-module-specifier-resolution=node build-src/shared",  
+    "build:client": "node --es-module-specifier-resolution=node build-src/client",
+    "build:server": "node --es-module-specifier-resolution=node build-src/server",
+    
+    "watch:client": "node --es-module-specifier-resolution=node build-src/client -w",
+    "watch:server": "node --es-module-specifier-resolution=node build-src/server -w",
+    "watch:shared": "node --es-module-specifier-resolution=node build-src/shared -w",
+
+    "types-shared": "dts-bundle-generator -o shared/dist/main.d.ts --inline-declare-externals shared/src/main.ts",
+    "types-client": "dts-bundle-generator -o client/dist/main.d.ts --inline-declare-externals client/src/main.ts",
+    "types-server": "dts-bundle-generator -o server/dist/main.d.ts --inline-declare-externals server/src/main.ts",
+
+    "build": "concurrently 'yarn:build:*'",
+    "watch": "concurrently 'yarn:watch:*' 'yarn:types-shared'"
+  },
+  "type": "module",
+  "dependencies": {
+    "@altv/types-client": "^1.9.1",
+    "@altv/types-server": "^2.0.9",
+    "@altv/types-shared": "^1.0.8",
+    "@types/uuid": "^8.3.1",
+    "@types/ws": "^8.2.0",
+    "@typescript-eslint/eslint-plugin": "^4.33.0",
+    "@typescript-eslint/parser": "^4.33.0",
+    "altv-xlogger": "^1.0.4",
+    "concurrently": "^6.3.0",
+    "dts-bundle-generator": "^5.9.0",
+    "esbuild": "^0.12.29",
+    "eslint": "^7.30.0",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.24.2",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.0",
+    "lerna": "^4.0.0",
+    "typescript": "^4.4.3"
+  }
+}

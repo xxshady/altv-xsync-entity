@@ -1,0 +1,12 @@
+{
+  "name": "altv-xsync-entity-shared",
+  "version": "1.0.0",
+  "main": "dist/main.js",
+  "files": [
+    "dist/main.d.ts"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@altv/types-shared": "1.x"
+  }
+}

@@ -10,7 +10,7 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 12,
     sourceType: 'module',
-    project: "./tsconfig.eslint.json",
+    project: './tsconfig.eslint.json',
     extraFileExtensions: ['.cjs']
   },
   rules: {
@@ -98,10 +98,14 @@ module.exports = {
     '@typescript-eslint/space-infix-ops': ['error'],
     semi: 0,
     '@typescript-eslint/semi': ['warn', 'never'],
+    'lines-between-class-members': 0,
+    '@typescript-eslint/lines-between-class-members': ['error',  'always', {
+      'exceptAfterSingleLine': true
+    }],
   },
   ignorePatterns: [
     '.eslintrc.cjs',
     'build-src/**/*',
-    "dist",
+    'dist',
   ],
 }

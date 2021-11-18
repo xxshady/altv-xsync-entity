@@ -1,1 +1,1 @@
-export * from "./messageEventsManager"
+export * from "./message-events-manager"

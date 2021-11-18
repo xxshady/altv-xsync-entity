@@ -1,3 +1,5 @@
+// TODO fix errors
+
 const rnds = new Array(16)
 const rng = function () {
   for (let i = 0, r; i < 16; i++) {
@@ -42,8 +44,8 @@ function bytesToUuid (buf: { [x: string]: string | number }, offset_: number | u
   ).toLowerCase()
 }
 // Uses ArrayLike to admit Unit8 and co.
-type OutputBuffer = ArrayLike<number>;
-type InputBuffer = ArrayLike<number>;
+type OutputBuffer = ArrayLike<number>
+type InputBuffer = ArrayLike<number>
 
 interface RandomOptions {
   random?: InputBuffer | undefined
@@ -52,10 +54,10 @@ interface RngOptions {
   rng?: (() => InputBuffer) | undefined
 }
 
-export type V4Options = RandomOptions | RngOptions;
-type v4String = (options?: V4Options) => string;
-type v4Buffer = <T extends OutputBuffer>(options: V4Options | null | undefined, buffer: T, offset?: number) => T;
-type v4 = v4Buffer & v4String;
+export type V4Options = RandomOptions | RngOptions
+type v4String = (options?: V4Options) => string
+type v4Buffer = <T extends OutputBuffer>(options: V4Options | null | undefined, buffer: T, offset?: number) => T
+type v4 = v4Buffer & v4String
 const v4: v4 = (options, buf, offset) => {
   options = options || {}
 

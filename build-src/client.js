@@ -1,6 +1,6 @@
 import process from 'process'
 import { build } from 'esbuild'
-import { getSharedBuildOptions } from './shared-options';
+import { getSharedBuildOptions } from './shared-options'
 
 const sharedOptions = getSharedBuildOptions(process)
 

@@ -1,5 +1,6 @@
 import { IdProvider } from "../id-provider"
 import { WSServer } from "../ws-server"
+import { Streamer } from "../streamer"
 
 export class InternalXSyncEntity {
   private static _instance: InternalXSyncEntity | null = null
@@ -16,6 +17,7 @@ export class InternalXSyncEntity {
 
   public readonly wss: WSServer
   public readonly idProvider = new IdProvider()
+  public readonly streamer = new Streamer()
 
   constructor (
     public readonly websocketPort: number,

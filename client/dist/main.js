@@ -113,7 +113,7 @@ function create_default(name, options = {}) {
   return Logger.create(name, { enabled, logLevel });
 }
 
-// client/src/websocket/class.ts
+// client/src/ws-client/class.ts
 import {
   Player,
   WebSocketClient,
@@ -251,9 +251,9 @@ var MessageEventsManager = class {
   }
 };
 
-// client/src/websocket/class.ts
-var WebSocketClient2 = class {
-  log = create_default("WebSocketClient");
+// client/src/ws-client/class.ts
+var WSClient = class {
+  log = create_default("WSClient");
   player = Player.local;
   messageHandlers = new Set();
   eventsManager;
@@ -340,7 +340,7 @@ var WebSocketClient2 = class {
 var log = create_default("xsync-entity:test");
 onServer("xsyncEntity:test", async (authCode) => {
   log.log("received test event from server authCode:", authCode);
-  const client = new WebSocketClient2("ws://127.0.0.1:7700", authCode, {
+  const client = new WSClient("ws://127.0.0.1:7700", authCode, {
     events: {
       kek(...args) {
         log.log("[kek event]", "args:~gl~", JSON.stringify(args));

@@ -108,7 +108,7 @@ function create_default(name, options = {}) {
   return Logger.create(name, { enabled, logLevel });
 }
 
-// shared/src/messageEventsManager/class.ts
+// shared/src/message-events-manager/class.ts
 var MessageEventsManager = class {
   log = create_default("MessageManager");
   eventsHandlers;

@@ -107,5 +107,6 @@ module.exports = {
     '.eslintrc.cjs',
     'build-src/**/*',
     'dist',
+    '*.d.ts',
   ],
 }

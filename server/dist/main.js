@@ -5,114 +5,24 @@ var __publicField = (obj, key, value) => {
   return value;
 };
 
-// server/src/test.ts
-import {
-  emitClient,
-  on as on2
-} from "alt-server";
-
-// node_modules/altv-xlogger/dist/create.js
-import alt2 from "alt-shared";
-
-// node_modules/altv-xlogger/dist/class.js
-import alt from "alt-shared";
-
-// node_modules/altv-xlogger/dist/decorators.js
-var checkEnabled = (logType) => {
-  return function(target, propertyKey, descriptor) {
-    const originalMethod = descriptor.value;
-    descriptor.value = function(...args) {
-      if (!this.enabled)
-        return;
-      if (logType < this.logLevel)
-        return;
-      originalMethod.apply(this, args);
-    };
-  };
-};
-
-// node_modules/altv-xlogger/dist/enums.js
-var LogLevel;
-(function(LogLevel3) {
-  LogLevel3[LogLevel3["Info"] = 0] = "Info";
-  LogLevel3[LogLevel3["Warn"] = 1] = "Warn";
-  LogLevel3[LogLevel3["Error"] = 2] = "Error";
-})(LogLevel || (LogLevel = {}));
-
-// node_modules/altv-xlogger/dist/class.js
-var __decorate = function(decorators, target, key, desc) {
-  var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-  if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
-    r = Reflect.decorate(decorators, target, key, desc);
-  else
-    for (var i = decorators.length - 1; i >= 0; i--)
-      if (d = decorators[i])
-        r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-  return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = function(k, v) {
-  if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
-    return Reflect.metadata(k, v);
-};
-var _Logger = class {
-  name;
-  enabled = true;
-  logLevel = LogLevel.Info;
-  constructor(name, options) {
-    this.name = name;
-    if (options)
-      this.applyOptions(options);
-    this.log = this.log.bind(this);
-    this.warn = this.warn.bind(this);
-    this.error = this.error.bind(this);
-  }
-  static create(name, options) {
-    return new _Logger(name, options);
-  }
-  applyOptions(options) {
-    const { logLevel = this.logLevel, enabled = this.enabled } = options;
-    this.logLevel = logLevel;
-    this.enabled = enabled;
-  }
-  log(...args) {
-    alt.log(`${_Logger.startLogColor}[${this.name}]~w~`, ...args);
-  }
-  warn(...args) {
-    alt.logWarning(`[${this.name}]`, ...args);
-  }
-  error(...args) {
-    if (args[0] instanceof Error) {
-      args[0] = args[0].stack;
+// server/src/id-provider/class.ts
+var IdProvider = class {
+  freeIds = [];
+  currentId = 0;
+  getNext() {
+    const freeId = this.freeIds.pop();
+    if (freeId != null)
+      return freeId;
+    const next = this.currentId++;
+    if (next >= Number.MAX_SAFE_INTEGER) {
+      throw new Error(`[IdProvider] failed get next id: next >= ${Number.MAX_SAFE_INTEGER}`);
     }
-    alt.logError(`[${this.name}]`, ...args);
+    return next;
+  }
+  freeId(id) {
+    this.freeIds.push(id);
   }
 };
-var Logger = _Logger;
-__publicField(Logger, "startLogColor", "~cl~");
-__decorate([
-  checkEnabled(LogLevel.Info),
-  __metadata("design:type", Function),
-  __metadata("design:paramtypes", [Object]),
-  __metadata("design:returntype", void 0)
-], Logger.prototype, "log", null);
-__decorate([
-  checkEnabled(LogLevel.Warn),
-  __metadata("design:type", Function),
-  __metadata("design:paramtypes", [Object]),
-  __metadata("design:returntype", void 0)
-], Logger.prototype, "warn", null);
-__decorate([
-  checkEnabled(LogLevel.Error),
-  __metadata("design:type", Function),
-  __metadata("design:paramtypes", [Object]),
-  __metadata("design:returntype", void 0)
-], Logger.prototype, "error", null);
-
-// node_modules/altv-xlogger/dist/create.js
-function create_default(name, options = {}) {
-  const { enabled = true, logLevel = alt2.debug ? LogLevel.Info : LogLevel.Warn } = options;
-  return Logger.create(name, { enabled, logLevel });
-}
 
 // server/src/ws-server/class.ts
 import {
@@ -128,7 +38,7 @@ import net2 from "net";
 import tls2 from "tls";
 import { randomBytes, createHash } from "crypto";
 import stream2 from "stream";
-import { URL } from "url";
+import { URL as URL2 } from "url";
 
 // node_modules/ws-esm/ws-esm/lib/permessage-deflate.js
 import zlib from "zlib";
@@ -1786,12 +1696,12 @@ function initAsClient(websocket, address, protocols, options) {
     throw new RangeError(`Unsupported protocol version: ${opts.protocolVersion} (supported versions: ${protocolVersions.join(", ")})`);
   }
   let parsedUrl;
-  if (address instanceof URL) {
+  if (address instanceof URL2) {
     parsedUrl = address;
     websocket._url = address.href;
   } else {
     try {
-      parsedUrl = new URL(address);
+      parsedUrl = new URL2(address);
     } catch (e) {
       throw new SyntaxError(`Invalid URL: ${address}`);
     }
@@ -1879,7 +1789,7 @@ function initAsClient(websocket, address, protocols, options) {
         return;
       }
       req.abort();
-      const addr = new URL(location, address);
+      const addr = new URL2(location, address);
       initAsClient(websocket, addr, protocols, options);
     } else if (!websocket.emit("unexpected-response", req, res)) {
       abortHandshake(websocket, req, `Unexpected server response: ${res.statusCode}`);
@@ -2222,10 +2132,10 @@ var WebSocketServer = class extends EventEmitter2 {
         process.nextTick(emitClose, this);
       }
     } else {
-      const server2 = this._server;
+      const server = this._server;
       this._removeListeners();
       this._removeListeners = this._server = null;
-      server2.close(() => {
+      server.close(() => {
         emitClose(this);
       });
     }
@@ -2339,18 +2249,18 @@ var WebSocketServer = class extends EventEmitter2 {
     cb(ws2, req);
   }
 };
-function addListeners(server2, map) {
+function addListeners(server, map) {
   for (const event of Object.keys(map))
-    server2.on(event, map[event]);
+    server.on(event, map[event]);
   return function removeListeners() {
     for (const event of Object.keys(map)) {
-      server2.removeListener(event, map[event]);
+      server.removeListener(event, map[event]);
     }
   };
 }
-function emitClose(server2) {
-  server2._state = CLOSED;
-  server2.emit("close");
+function emitClose(server) {
+  server._state = CLOSED;
+  server.emit("close");
 }
 function socketOnError2() {
   this.destroy();
@@ -2411,6 +2321,109 @@ var v4 = (options, buf, offset) => {
   return bytesToUuid(rnds2);
 };
 var uuidv4_default = v4;
+
+// node_modules/altv-xlogger/dist/create.js
+import alt2 from "alt-shared";
+
+// node_modules/altv-xlogger/dist/class.js
+import alt from "alt-shared";
+
+// node_modules/altv-xlogger/dist/decorators.js
+var checkEnabled = (logType) => {
+  return function(target, propertyKey, descriptor) {
+    const originalMethod = descriptor.value;
+    descriptor.value = function(...args) {
+      if (!this.enabled)
+        return;
+      if (logType < this.logLevel)
+        return;
+      originalMethod.apply(this, args);
+    };
+  };
+};
+
+// node_modules/altv-xlogger/dist/enums.js
+var LogLevel;
+(function(LogLevel3) {
+  LogLevel3[LogLevel3["Info"] = 0] = "Info";
+  LogLevel3[LogLevel3["Warn"] = 1] = "Warn";
+  LogLevel3[LogLevel3["Error"] = 2] = "Error";
+})(LogLevel || (LogLevel = {}));
+
+// node_modules/altv-xlogger/dist/class.js
+var __decorate = function(decorators, target, key, desc) {
+  var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+  if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
+    r = Reflect.decorate(decorators, target, key, desc);
+  else
+    for (var i = decorators.length - 1; i >= 0; i--)
+      if (d = decorators[i])
+        r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+  return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = function(k, v) {
+  if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
+    return Reflect.metadata(k, v);
+};
+var _Logger = class {
+  name;
+  enabled = true;
+  logLevel = LogLevel.Info;
+  constructor(name, options) {
+    this.name = name;
+    if (options)
+      this.applyOptions(options);
+    this.log = this.log.bind(this);
+    this.warn = this.warn.bind(this);
+    this.error = this.error.bind(this);
+  }
+  static create(name, options) {
+    return new _Logger(name, options);
+  }
+  applyOptions(options) {
+    const { logLevel = this.logLevel, enabled = this.enabled } = options;
+    this.logLevel = logLevel;
+    this.enabled = enabled;
+  }
+  log(...args) {
+    alt.log(`${_Logger.startLogColor}[${this.name}]~w~`, ...args);
+  }
+  warn(...args) {
+    alt.logWarning(`[${this.name}]`, ...args);
+  }
+  error(...args) {
+    if (args[0] instanceof Error) {
+      args[0] = args[0].stack;
+    }
+    alt.logError(`[${this.name}]`, ...args);
+  }
+};
+var Logger = _Logger;
+__publicField(Logger, "startLogColor", "~cl~");
+__decorate([
+  checkEnabled(LogLevel.Info),
+  __metadata("design:type", Function),
+  __metadata("design:paramtypes", [Object]),
+  __metadata("design:returntype", void 0)
+], Logger.prototype, "log", null);
+__decorate([
+  checkEnabled(LogLevel.Warn),
+  __metadata("design:type", Function),
+  __metadata("design:paramtypes", [Object]),
+  __metadata("design:returntype", void 0)
+], Logger.prototype, "warn", null);
+__decorate([
+  checkEnabled(LogLevel.Error),
+  __metadata("design:type", Function),
+  __metadata("design:paramtypes", [Object]),
+  __metadata("design:returntype", void 0)
+], Logger.prototype, "error", null);
+
+// node_modules/altv-xlogger/dist/create.js
+function create_default(name, options = {}) {
+  const { enabled = true, logLevel = alt2.debug ? LogLevel.Info : LogLevel.Warn } = options;
+  return Logger.create(name, { enabled, logLevel });
+}
 
 // shared/dist/main.js
 import alt22 from "alt-shared";
@@ -2552,16 +2565,16 @@ var WSServer = class {
   eventsManager;
   constructor(port, { events }) {
     this.log.log(`init server on port: ${port}...`);
-    const server2 = new http3.Server();
+    const server = new http3.Server();
     const wss = new websocket_server_default({
       noServer: true
     });
     this.eventsManager = this.initUserEvents(events);
-    this.setupHttpEvents(server2);
+    this.setupHttpEvents(server);
     this.setupWssEvents(wss);
     this.setupAltEvents();
     this.wss = wss;
-    server2.listen(port);
+    server.listen(port);
   }
   sendPlayer(player, eventName, ...args) {
     if (!player.valid)
@@ -2596,9 +2609,9 @@ var WSServer = class {
   addMessageHandler(handler) {
     this.messageHandlers.add(handler);
   }
-  setupHttpEvents(server2) {
-    server2.on("upgrade", this.onHttpUpgrade.bind(this));
-    server2.on("listening", this.onHttpListening.bind(this));
+  setupHttpEvents(server) {
+    server.on("upgrade", this.onHttpUpgrade.bind(this));
+    server.on("listening", this.onHttpListening.bind(this));
   }
   onHttpUpgrade(req, socket, head) {
     const { headers } = req;
@@ -2709,19 +2722,92 @@ var WSServer = class {
   }
 };
 
-// server/src/test.ts
-var log = create_default("xsync-entity");
-var server = new WSServer(7700, {
-  events: {
-    kek(player, ...args) {
-      log.log(`[kek event] player: ${player.name} args:`);
-      console.debug(args);
-      server.sendPlayer(player, "kek", "yes");
-    }
+// server/src/streamer/streamer.worker.ts
+import { Worker } from "worker_threads";
+function ExportedWorker() {
+  return new Worker(new URL("./streamer.worker.js", import.meta.url));
+}
+
+// server/src/streamer/class.ts
+var Streamer = class {
+  worker = new ExportedWorker();
+  entities = new Set();
+  log = create_default("altv-xsync-entity:streamer");
+  constructor() {
+    this.worker.on("message", (value) => {
+      this.log.log("worker message:");
+      console.log(value);
+    });
   }
-});
-on2("playerConnect", (player) => {
-  log.log("~gl~[playerConnect]~w~", `player: ${player.name}`, "add into websocket");
-  const authCode = server.addPlayer(player);
-  emitClient(player, "xsyncEntity:test", authCode);
-});
+};
+
+// server/src/internal-xsync-entity/class.ts
+var _InternalXSyncEntity = class {
+  constructor(websocketPort) {
+    this.websocketPort = websocketPort;
+    this.wss = new WSServer(websocketPort, {
+      events: {}
+    });
+    if (_InternalXSyncEntity._instance) {
+      throw new Error("InternalXSyncEntity already initialized");
+    }
+    _InternalXSyncEntity._instance = this;
+  }
+  static get instance() {
+    const { _instance } = this;
+    if (!_instance) {
+      throw new Error("InternalXSyncEntity has not been initialized yet");
+    }
+    return _instance;
+  }
+  wss;
+  idProvider = new IdProvider();
+  streamer = new Streamer();
+};
+var InternalXSyncEntity = _InternalXSyncEntity;
+__publicField(InternalXSyncEntity, "_instance", null);
+
+// server/src/xsync-entity/class.ts
+var _XSyncEntity = class {
+  constructor(websocketPort = 7700) {
+    this.websocketPort = websocketPort;
+    this.internal = new InternalXSyncEntity(websocketPort);
+    if (_XSyncEntity._instance) {
+      throw new Error("XSyncEntity already initialized");
+    }
+    _XSyncEntity._instance = this;
+  }
+  internal;
+};
+var XSyncEntity = _XSyncEntity;
+__publicField(XSyncEntity, "_instance", null);
+
+// server/src/internal-entity/class.ts
+var InternalEntity = class {
+  constructor(publicInstance, id, pos, dimension = 0, streamRange = 300, migrationRange = streamRange / 2) {
+    this.publicInstance = publicInstance;
+    this.id = id;
+    this.pos = pos;
+    this.dimension = dimension;
+    this.streamRange = streamRange;
+    this.migrationRange = migrationRange;
+  }
+};
+
+// server/src/entity/class.ts
+var Entity = class {
+  constructor(type, pos, dimension, streamRange, migrationRange) {
+    this.type = type;
+    this.pos = pos;
+    this.dimension = dimension;
+    this.streamRange = streamRange;
+    this.migrationRange = migrationRange;
+    const { instance } = InternalXSyncEntity;
+    this.internalInstance = new InternalEntity(this, instance.idProvider.getNext(), pos, dimension, streamRange, migrationRange);
+  }
+  internalInstance;
+};
+export {
+  Entity,
+  XSyncEntity
+};

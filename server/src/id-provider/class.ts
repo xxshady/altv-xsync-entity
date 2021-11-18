@@ -8,7 +8,13 @@ export class IdProvider {
 
     if (freeId != null) return freeId
 
-    return this.currentId++
+    const next = this.currentId++
+
+    if (next >= Number.MAX_SAFE_INTEGER) {
+      throw new Error(`[IdProvider] failed get next id: next >= ${Number.MAX_SAFE_INTEGER}`)
+    }
+
+    return next
   }
 
   public freeId (id: number): void {

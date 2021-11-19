@@ -22,17 +22,17 @@ export class InternalXSyncEntity {
   constructor (
     public readonly websocketPort: number,
   ) {
+    if (InternalXSyncEntity._instance) {
+      throw new Error("InternalXSyncEntity already initialized")
+    }
+
+    InternalXSyncEntity._instance = this
+
     this.wss = new WSServer(
       websocketPort,
       {
         events: {},
       },
     )
-
-    if (InternalXSyncEntity._instance) {
-      throw new Error("InternalXSyncEntity already initialized")
-    }
-
-    InternalXSyncEntity._instance = this
   }
 }

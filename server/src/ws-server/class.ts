@@ -23,9 +23,14 @@ export class WSServer {
 
   private readonly wss: ws.Server
   private readonly eventsManager: MessageEventsManager
+
+  private readonly externalIpPromise: Promise<void>
   private _externalIp: string | null = null
 
-  constructor (port: number, { events }: IWebSocketServerOptions) {
+  constructor (
+    public readonly port: number,
+    { events }: IWebSocketServerOptions,
+  ) {
     this.log.log(`init server on port: ${port}...`)
 
     const server = new http.Server()
@@ -36,15 +41,16 @@ export class WSServer {
 
     this.eventsManager = this.initUserEvents(events)
     this.wss = wss
+    this.externalIpPromise = this.initExternalIp()
+    this.externalIpPromise.catch(this.onInitExternalIpError.bind(this))
 
     this.setupHttpEvents(server)
     this.setupWssEvents(wss)
     this.setupAltEvents()
-    this.initExternalIp().catch(this.onInitExternalIpError.bind(this))
     server.listen(port)
   }
 
-  private get externalIp (): string {
+  public get externalIp (): string {
     const { _externalIp } = this
 
     if (!_externalIp) {
@@ -52,6 +58,10 @@ export class WSServer {
     }
 
     return _externalIp
+  }
+
+  public waitExternalIp (): Promise<void> {
+    return this.externalIpPromise
   }
 
   public sendPlayer (player: alt.Player, eventName: string, ...args: unknown[]): void {

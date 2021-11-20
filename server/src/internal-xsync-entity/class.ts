@@ -2,8 +2,9 @@ import * as alt from "alt-server"
 import { IdProvider } from "../id-provider"
 import { WSServer } from "../ws-server"
 import { Streamer } from "../streamer"
-import type { IClientOnServerEvent } from "altv-xsync-entity-shared"
 import { ClientOnServerEvents } from "altv-xsync-entity-shared"
+import { Players } from "../players"
+import { createLogger } from "altv-xlogger"
 
 export class InternalXSyncEntity {
   private static _instance: InternalXSyncEntity | null = null
@@ -21,6 +22,8 @@ export class InternalXSyncEntity {
   public readonly wss: WSServer
   public readonly idProvider = new IdProvider()
   public readonly streamer = new Streamer()
+  private readonly addedPlayers = new Players()
+  private readonly log = createLogger("InternalXSyncEntity")
 
   constructor (
     public readonly websocketPort: number,
@@ -41,11 +44,24 @@ export class InternalXSyncEntity {
     this.setupAltvEvents()
   }
 
-  private setupAltvEvents () {
-    alt.on("playerConnect", this.onPlayerConnect.bind(this))
+  public get players (): ReadonlyArray<alt.Player> {
+    return this.addedPlayers.array
   }
 
-  private async onPlayerConnect (player: alt.Player) {
+  private setupAltvEvents () {
+    alt.on("playerConnect", this.onPlayerConnect.bind(this))
+    alt.on("playerDisconnect", this.onPlayerDisconnect.bind(this))
+  }
+
+  private onPlayerConnect (player: alt.Player) {
+    this.addPlayer(player).catch(this.log.error)
+  }
+
+  private onPlayerDisconnect (player: alt.Player) {
+    this.removePlayer(player)
+  }
+
+  private async addPlayer (player: alt.Player) {
     await this.wss.waitExternalIp()
     const authCode = this.wss.addPlayer(player)
 
@@ -59,5 +75,11 @@ export class InternalXSyncEntity {
 
       `ws://${this.wss.externalIp}:${this.wss.port}`,
     )
+
+    this.addedPlayers.add(player)
+  }
+
+  private removePlayer (player: alt.Player) {
+    this.addedPlayers.remove(player)
   }
 }

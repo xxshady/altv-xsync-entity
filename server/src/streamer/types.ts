@@ -28,3 +28,8 @@ export interface IStreamWorkerCreateEntityPool extends IStreamWorkerSharedEntity
 export interface IStreamWorkerEntityPool extends IStreamWorkerSharedEntityPool {
 
 }
+
+export interface IStreamerWorkerPlayerChange {
+  pos2d: alt.IVector2
+  dimension: number
+}

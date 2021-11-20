@@ -59,12 +59,10 @@ class StreamerWorker {
       this.updateEntitiesArray()
     },
 
-    [StreamerWorkerEvents.PlayerDimensionChanges]: (playerDimensions) => {
-
-    },
-
-    [StreamerWorkerEvents.PlayerPosChanges]: (playerPoses) => {
-
+    [StreamerWorkerEvents.PlayersUpdate]: (players) => {
+      for (let i = 0; i < players.length; i++) {
+        const [playerId, { pos2d, dimension }] = players[i]
+      }
     },
   }
 

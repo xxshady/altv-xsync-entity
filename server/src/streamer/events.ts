@@ -1,5 +1,5 @@
-import type * as alt from "alt-server"
 import type {
+  IStreamerWorkerPlayerChange,
   IStreamWorkerCreateEntity,
   IStreamWorkerCreateEntityPool,
   PlayerId,
@@ -9,8 +9,7 @@ export enum StreamerWorkerEvents {
   CreatePool,
   CreateEntity,
   DestroyEntity,
-  PlayerPosChanges,
-  PlayerDimensionChanges,
+  PlayersUpdate,
 }
 
 export enum StreamerFromWorkerEvents {
@@ -29,8 +28,7 @@ export interface IStreamerWorkerEvent {
   [StreamerWorkerEvents.CreatePool]: (pool: IStreamWorkerCreateEntityPool) => void
   [StreamerWorkerEvents.CreateEntity]: (entity: IStreamWorkerCreateEntity) => void
   [StreamerWorkerEvents.DestroyEntity]: (entityId: number) => void
-  [StreamerWorkerEvents.PlayerPosChanges]: (players: Record<PlayerId, alt.IVector3>) => void
-  [StreamerWorkerEvents.PlayerDimensionChanges]: (players: Record<PlayerId, number>) => void
+  [StreamerWorkerEvents.PlayersUpdate]: (players: [PlayerId, IStreamerWorkerPlayerChange][]) => void
 }
 
 export type IStreamerSharedWorkerMessage<

@@ -7,8 +7,10 @@ export const dist2dWithRange = (a: IVector2, b: IVector2, maxRange: number): num
   if (Math.abs(ab1) > maxRange) return Infinity
   if (Math.abs(ab2) > maxRange) return Infinity
 
-  return Math.sqrt(
+  const dist = Math.sqrt(
     ab1 * ab1 +
     ab2 * ab2,
   )
+
+  return (dist > maxRange) ? Infinity : dist
 }

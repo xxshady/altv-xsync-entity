@@ -2,9 +2,16 @@ import * as alt from "alt-server"
 import { IdProvider } from "../id-provider"
 import { WSServer } from "../ws-server"
 import { Streamer } from "../streamer"
-import { ClientOnServerEvents } from "altv-xsync-entity-shared"
+import type {
+  IWSClientOnServerEvent, WSEntity,
+} from "altv-xsync-entity-shared"
+import {
+  ClientOnServerEvents,
+  WSClientOnServerEvents,
+} from "altv-xsync-entity-shared"
 import { Players } from "../players"
 import { createLogger } from "altv-xlogger"
+import type { InternalEntity } from "../internal-entity"
 
 export class InternalXSyncEntity {
   private static _instance: InternalXSyncEntity | null = null
@@ -21,8 +28,13 @@ export class InternalXSyncEntity {
 
   public readonly wss: WSServer
   public readonly idProvider = new IdProvider()
-  public readonly streamer = new Streamer()
-  private readonly addedPlayers = new Players()
+  public readonly streamer = new Streamer(
+    this.onEntitiesStreamIn.bind(this),
+    this.onEntitiesStreamOut.bind(this),
+  )
+
+  public readonly players = new Players()
+
   private readonly log = createLogger("InternalXSyncEntity")
 
   constructor (
@@ -44,8 +56,20 @@ export class InternalXSyncEntity {
     this.setupAltvEvents()
   }
 
-  public get players (): ReadonlyArray<alt.Player> {
-    return this.addedPlayers.array
+  public addEntity (entity: InternalEntity): void {
+    this.streamer.addEntity(entity)
+  }
+
+  public removeEntity (entity: InternalEntity): void {
+    this.streamer.removeEntity(entity)
+  }
+
+  private emitWSPlayer <K extends WSClientOnServerEvents> (player: alt.Player, eventName: K, ...args: Parameters<IWSClientOnServerEvent[K]>) {
+    this.wss.sendPlayer(
+      player,
+      eventName.toString(),
+      ...args,
+    )
   }
 
   private setupAltvEvents () {
@@ -76,10 +100,35 @@ export class InternalXSyncEntity {
       `ws://${this.wss.externalIp}:${this.wss.port}`,
     )
 
-    this.addedPlayers.add(player)
+    this.players.add(player)
   }
 
   private removePlayer (player: alt.Player) {
-    this.addedPlayers.remove(player)
+    this.streamer.removedPlayer(player)
+    this.players.remove(player)
+  }
+
+  private onEntitiesStreamIn (player: alt.Player, entities: InternalEntity[]) {
+    this.log.log("onEntitiesStreamIn", "player:", player.name, "entities:", entities.map(e => e.id))
+
+    this.emitWSPlayer(
+      player,
+      WSClientOnServerEvents.EntitiesStreamIn,
+      this.convertEntitiesToWS(entities),
+    )
+  }
+
+  private onEntitiesStreamOut (player: alt.Player, entities: InternalEntity[]) {
+    this.log.log("onEntitiesStreamIn", "player:", player.name, "entities:", entities.map(e => e.id))
+
+    this.emitWSPlayer(
+      player,
+      WSClientOnServerEvents.EntitiesStreamOut,
+      this.convertEntitiesToWS(entities),
+    )
+  }
+
+  private convertEntitiesToWS (entities: InternalEntity[]): WSEntity[] {
+    return entities.map(({ poolId, id }) => [poolId, id])
   }
 }

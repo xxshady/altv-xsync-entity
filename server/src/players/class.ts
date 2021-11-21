@@ -1,11 +1,11 @@
 import type * as alt from "alt-server"
 
 export class Players {
-  private readonly all: Set<alt.Player> = new Set()
+  public readonly dict: Record<alt.Player["id"], alt.Player> = {}
   public readonly array: alt.Player[] = []
 
   public add (player: alt.Player): void {
-    this.all.add(player)
+    this.dict[player.id] = player
     this.array.push(player)
   }
 
@@ -15,6 +15,6 @@ export class Players {
     if (idx === -1) return
 
     this.array.splice(idx, 1)
-    this.all.delete(player)
+    delete this.dict[player.id]
   }
 }

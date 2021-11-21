@@ -1,8 +1,9 @@
 import type {
-  IStreamerWorkerPlayerChange,
-  IStreamWorkerCreateEntity,
-  IStreamWorkerCreateEntityPool,
+  IStreamerWorkerCreateEntity,
+  IStreamerWorkerCreateEntityPool,
+  IStreamerWorkerUpdatePlayer,
   PlayerId,
+  StreamerWorkerPlayersEntities,
 } from "./types"
 
 export enum StreamerWorkerEvents {
@@ -13,22 +14,24 @@ export enum StreamerWorkerEvents {
 }
 
 export enum StreamerFromWorkerEvents {
-  StreamInPlayerEntities,
-  StreamOutPlayerEntities,
+  StreamChangePlayerEntities,
   NetOwnerChangeEntities,
 }
 
 export interface IStreamerFromWorkerEvent {
-  [StreamerFromWorkerEvents.StreamInPlayerEntities]: (playersAndEntities: Record<PlayerId, number[]>) => void
-  [StreamerFromWorkerEvents.StreamOutPlayerEntities]: (playersAndEntities: Record<PlayerId, number[]>) => void
-  [StreamerFromWorkerEvents.NetOwnerChangeEntities]: (netOwnersAndEntities: Record<PlayerId, number[]>) => void
+  [StreamerFromWorkerEvents.StreamChangePlayerEntities]: (
+    playersInEntities: StreamerWorkerPlayersEntities,
+    playersOutEntities: StreamerWorkerPlayersEntities
+  ) => void
+  [StreamerFromWorkerEvents.NetOwnerChangeEntities]: (netOwnersAndEntities: StreamerWorkerPlayersEntities) => void
 }
 
 export interface IStreamerWorkerEvent {
-  [StreamerWorkerEvents.CreatePool]: (pool: IStreamWorkerCreateEntityPool) => void
-  [StreamerWorkerEvents.CreateEntity]: (entity: IStreamWorkerCreateEntity) => void
+  [StreamerWorkerEvents.CreatePool]: (pool: IStreamerWorkerCreateEntityPool) => void
+  [StreamerWorkerEvents.CreateEntity]: (entity: IStreamerWorkerCreateEntity) => void
   [StreamerWorkerEvents.DestroyEntity]: (entityId: number) => void
-  [StreamerWorkerEvents.PlayersUpdate]: (players: [PlayerId, IStreamerWorkerPlayerChange][]) => void
+  // player updated info or removed player id array
+  [StreamerWorkerEvents.PlayersUpdate]: (players: ([PlayerId, IStreamerWorkerUpdatePlayer] | PlayerId)[]) => void
 }
 
 export type IStreamerSharedWorkerMessage<

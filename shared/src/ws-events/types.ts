@@ -1,0 +1,1 @@
+export type WSEntity = [poolId: number, entityId: number]

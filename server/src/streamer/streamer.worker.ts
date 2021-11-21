@@ -1,23 +1,32 @@
+import type * as alt from "alt-server"
 import { parentPort } from "worker_threads"
-import { StreamerWorkerEvents } from "./events"
+import {
+  StreamerWorkerEvents,
+  StreamerFromWorkerEvents,
+} from "./events"
 import type {
   IStreamerWorkerEvent,
   IStreamerSharedWorkerMessage,
+  IStreamerFromWorkerEvent,
 } from "./events"
 import type {
-  IStreamWorkerEntity,
-  IStreamWorkerEntityPool,
+  IStreamerWorkerPlayer,
+  IStreamerWorkerDistEntity,
+  IStreamerWorkerEntity,
+  IStreamerWorkerEntityPool,
+  StreamerWorkerPlayersEntities,
 } from "./types"
 import { dist2dWithRange } from "../utils/dist-2d-range"
 
 class StreamerWorker {
-  private readonly pools: Record<number, IStreamWorkerEntityPool> = {}
-  private readonly entities: Record<number, IStreamWorkerEntity> = {}
+  private readonly pools: Record<number, IStreamerWorkerEntityPool> = {}
+  private readonly entities: Record<number, IStreamerWorkerEntity> = {}
+  private readonly players: Record<number, IStreamerWorkerPlayer> = {}
 
   /**
    * array for faster iteration through it in for loop
    */
-  private entitiesArray: IStreamWorkerEntity[] = []
+  private entitiesArray: IStreamerWorkerEntity[] = []
 
   private readonly log = {
     prefix: "[xsync-entity:streamer:worker]",
@@ -41,13 +50,17 @@ class StreamerWorker {
       }
     },
 
-    [StreamerWorkerEvents.CreateEntity]: ({ poolId, id, dimension, pos }) => {
+    [StreamerWorkerEvents.CreateEntity]: (
+      { poolId, id, dimension, pos, streamRange, migrationRange },
+    ) => {
       this.entities[id] = {
+        id,
         poolId,
         dimension,
         pos,
+        streamRange,
+        migrationRange,
         netOwnerId: null,
-        inStreamPlayerIds: [],
       }
 
       this.updateEntitiesArray()
@@ -59,16 +72,64 @@ class StreamerWorker {
       this.updateEntitiesArray()
     },
 
-    [StreamerWorkerEvents.PlayersUpdate]: (players) => {
-      for (let i = 0; i < players.length; i++) {
-        const [playerId, { pos2d, dimension }] = players[i]
+    [StreamerWorkerEvents.PlayersUpdate]: (playersData) => {
+      const playersInEntities: StreamerWorkerPlayersEntities = {}
+      const playersOutEntities: StreamerWorkerPlayersEntities = {}
+
+      for (let i = 0; i < playersData.length; i++) {
+        const playerDataOrId = playersData[i]
+
+        // removed player id
+        if (typeof playerDataOrId === "number") {
+          delete this.players[playerDataOrId]
+          continue
+        }
+
+        const [playerId, { pos2d, dimension }] = playerDataOrId
+
+        let streamedEntityIds: Set<number>
+        const player = this.players[playerId]
+
+        if (player) {
+          streamedEntityIds = player.streamedEntityIds
+        } else {
+          streamedEntityIds = new Set()
+        }
+
+        const {
+          streamIn,
+          streamOut,
+        } = this.streamEntitiesForPlayer(pos2d, dimension, streamedEntityIds)
+
+        playersInEntities[playerId] = streamIn
+        playersOutEntities[playerId] = streamOut
+
+        this.players[playerId] = { streamedEntityIds }
       }
+
+      this.emit(
+        StreamerFromWorkerEvents.StreamChangePlayerEntities,
+        playersInEntities,
+        playersOutEntities,
+      )
     },
   }
 
   constructor () {
     // this.log.log("worker started")
     this.setupEvents()
+  }
+
+  private emit <K extends StreamerFromWorkerEvents> (
+    eventName: K,
+    ...args: Parameters<IStreamerFromWorkerEvent[K]>
+  ): void {
+    const message: IStreamerSharedWorkerMessage<IStreamerFromWorkerEvent, K> = {
+      name: eventName,
+      data: args,
+    }
+
+    parentPort?.postMessage(message)
   }
 
   private setupEvents () {
@@ -95,55 +156,101 @@ class StreamerWorker {
     this.entitiesArray = Object.values(this.entities)
   }
 
-  // private streamProcess () {
-  //   const streamInIds: number[] = []
-  //   const streamOutIds: number[] = []
+  private streamEntitiesForPlayer (
+    pos: alt.IVector2,
+    dimension: number,
+    streamedEntityIds: Set<number>,
+  ): {
+      streamIn: number[]
+      streamOut: number[]
+    } {
+    const streamInIds: number[] = []
+    const streamOutIds: number[] = []
+    const entities = this.entitiesArray
+    const filteredEntities: IStreamerWorkerDistEntity[] = []
 
-  //   const entities = this.entitiesArray as StreamEntityDist[]
+    for (let i = 0; i < entities.length; i++) {
+      const {
+        poolId,
+        id,
+        dimension: entityDimension,
+        pos: entityPos,
+        streamRange,
+      } = entities[i]
 
-  //   for (let i = 0; i < entities.length; i++) {
-  //     entities[i].dist = dist2dWithRange(
-  //       entities[i].pos,
-  //       this.streamPos,
-  //       entities[i].streamRange,
-  //     )
-  //   }
+      if (dimension !== entityDimension) {
+        this.streamOutEntityPlayer(id, streamedEntityIds, streamOutIds)
+        continue
+      }
 
-  //   const sortedEntities = (entities as Required<StreamEntityDist>[]).sort(
-  //     (a, b) => a.dist - b.dist,
-  //   )
+      filteredEntities.push({
+        poolId,
+        id,
+        dist: dist2dWithRange(
+          entityPos,
+          pos,
+          streamRange,
+        ),
+      })
+    }
 
-  //   // console.log(`sortedEntities: ${sortedEntities.map(e => e.id).join(", ")}`)
+    const sortedEntities = filteredEntities.sort(this.sortEntityDists)
 
-  //   let lastIdx = 0
+    // console.log(`sortedEntities: ${sortedEntities.map(e => e.id).join(", ")}`)
 
-  //   for (let thisTickStreamIn = 0; lastIdx < sortedEntities.length; lastIdx++) {
-  //     const entity = sortedEntities[lastIdx]
+    let lastIdx = 0
 
-  //     if (entity.dist > entity.streamRange) {
-  //       this.streamOutEntity(entity, streamOutIds)
-  //       continue
-  //     }
+    // { pool id -> number of entities }
+    const poolsStreamIn: Record<number, number> = {}
 
-  //     thisTickStreamIn++
+    for (const poolId in this.pools) {
+      poolsStreamIn[poolId] = 0
+    }
 
-  //     this.streamInEntity(entity, streamInIds)
+    for (; lastIdx < sortedEntities.length; lastIdx++) {
+      const { id, dist, poolId } = sortedEntities[lastIdx]
 
-  //     if (thisTickStreamIn === this.maxStreamedIn) break
-  //   }
+      if (dist === Infinity) {
+        this.streamOutEntityPlayer(id, streamedEntityIds, streamOutIds)
+        continue
+      }
 
-  //   for (let i = lastIdx + 1; i < sortedEntities.length; i++) {
-  //     this.streamOutEntity(sortedEntities[i], streamOutIds)
-  //   }
+      const poolStreamIn = poolsStreamIn[poolId] + 1
 
-  //   if (streamInIds.length > 0) {
-  //     this.sendMessage(FromStreamWorkerMessage.StreamIn, streamInIds)
-  //   }
+      // TODO TEST correct calculation of max streamed in entities
+      if (poolStreamIn > this.pools[poolId].maxStreamedIn) {
+        continue
+      }
 
-  //   if (streamOutIds.length > 0) {
-  //     this.sendMessage(FromStreamWorkerMessage.StreamOut, streamOutIds)
-  //   }
-  // }
+      this.streamInEntityPlayer(id, streamedEntityIds, streamInIds)
+    }
+
+    for (let i = lastIdx + 1; i < sortedEntities.length; i++) {
+      this.streamOutEntityPlayer(sortedEntities[i].id, streamedEntityIds, streamOutIds)
+    }
+
+    return {
+      streamIn: streamInIds,
+      streamOut: streamOutIds,
+    }
+  }
+
+  private sortEntityDists (a: IStreamerWorkerDistEntity, b: IStreamerWorkerDistEntity) {
+    return a.dist - b.dist
+  }
+
+  private streamOutEntityPlayer (entityId: number, streamedEntityIds: Set<number>, streamOutIds: number[]) {
+    if (!streamedEntityIds.delete(entityId)) return
+
+    streamOutIds.push(entityId)
+  }
+
+  private streamInEntityPlayer (entityId: number, streamedEntityIds: Set<number>, streamInIds: number[]) {
+    if (streamedEntityIds.has(entityId)) return
+
+    streamedEntityIds.add(entityId)
+    streamInIds.push(entityId)
+  }
 }
 
 new StreamerWorker()

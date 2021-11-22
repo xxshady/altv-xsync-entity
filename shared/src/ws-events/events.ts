@@ -1,4 +1,7 @@
-import type { WSEntity } from "./types"
+import type {
+  WSEntityCreate,
+  WSEntity,
+} from "./types"
 
 export enum WSClientOnServerEvents {
   EntitiesStreamIn,
@@ -6,6 +9,6 @@ export enum WSClientOnServerEvents {
 }
 
 export interface IWSClientOnServerEvent {
-  [WSClientOnServerEvents.EntitiesStreamIn]: (entities: WSEntity[]) => void
+  [WSClientOnServerEvents.EntitiesStreamIn]: (entities: WSEntityCreate[]) => void
   [WSClientOnServerEvents.EntitiesStreamOut]: (entities: WSEntity[]) => void
 }

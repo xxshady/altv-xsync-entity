@@ -2,18 +2,20 @@ import * as alt from "alt-server"
 import { IdProvider } from "../id-provider"
 import { WSServer } from "../ws-server"
 import { Streamer } from "../streamer"
-import type {
-  IWSClientOnServerEvent, WSEntity,
-} from "altv-xsync-entity-shared"
+import type { IWSClientOnServerEvent, WSEntity, WSEntityCreate } from "altv-xsync-entity-shared"
 import {
+  WSVectors,
+
   ClientOnServerEvents,
   WSClientOnServerEvents,
 } from "altv-xsync-entity-shared"
+
 import { Players } from "../players"
 import { createLogger } from "altv-xlogger"
 import type { InternalEntity } from "../internal-entity"
 
 export class InternalXSyncEntity {
+  // TODO move in shared
   private static _instance: InternalXSyncEntity | null = null
 
   public static get instance (): InternalXSyncEntity {
@@ -114,7 +116,7 @@ export class InternalXSyncEntity {
     this.emitWSPlayer(
       player,
       WSClientOnServerEvents.EntitiesStreamIn,
-      this.convertEntitiesToWS(entities),
+      this.convertEntitiesToWSCreate(entities),
     )
   }
 
@@ -130,5 +132,21 @@ export class InternalXSyncEntity {
 
   private convertEntitiesToWS (entities: InternalEntity[]): WSEntity[] {
     return entities.map(({ poolId, id }) => [poolId, id])
+  }
+
+  private convertEntitiesToWSCreate (entities: InternalEntity[]): WSEntityCreate[] {
+    return entities.map((
+      {
+        poolId,
+        id,
+        pos,
+        data,
+      }) =>
+      [
+        poolId,
+        id,
+        WSVectors.altToWS(pos),
+        data,
+      ])
   }
 }

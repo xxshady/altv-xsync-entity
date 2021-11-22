@@ -1,6 +1,8 @@
 import * as alt from "alt-client"
 import { createLogger } from "altv-xlogger"
 import type {
+  EventsType,
+  EventsTypeAny,
   IWaitConnectPromise,
   IWebSocketOptions,
 } from "./types"
@@ -8,7 +10,7 @@ import {
   MessageEventsManager,
 } from "altv-xsync-entity-shared"
 
-export class WSClient {
+export class WSClient<TEvents extends EventsTypeAny> {
   private readonly log = createLogger("WSClient")
   private readonly player = alt.Player.local
   private readonly messageHandlers = new Set<((message: string) => void)>()
@@ -19,10 +21,10 @@ export class WSClient {
 
   private connected = false
 
-  constructor (url: string, authCode: string, { events }: IWebSocketOptions) {
+  constructor (url: string, authCode: string, options: IWebSocketOptions<TEvents>) {
     this.client = this.initClient(authCode, url)
     this.waitConnectPromise = this.initWaitConnectPromise()
-    this.eventsManager = this.initUserEvents(events)
+    this.eventsManager = this.initUserEvents(options)
 
     this.setupWsClientEvents(this.client)
   }
@@ -96,7 +98,7 @@ export class WSClient {
     this.log.error("[error]", error)
   }
 
-  private initUserEvents (events: IWebSocketOptions["events"]): MessageEventsManager {
+  private initUserEvents ({ events }: IWebSocketOptions<EventsType>): MessageEventsManager {
     const manager = new MessageEventsManager(events)
 
     this.addMessageHandler((raw) => {

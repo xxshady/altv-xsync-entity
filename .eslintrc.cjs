@@ -102,6 +102,8 @@ module.exports = {
     '@typescript-eslint/lines-between-class-members': ['error',  'always', {
       'exceptAfterSingleLine': true
     }],
+    "no-use-before-define": 0,
+    '@typescript-eslint/no-use-before-define': ['error'],
   },
   ignorePatterns: [
     '.eslintrc.cjs',

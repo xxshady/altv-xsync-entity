@@ -1,4 +1,5 @@
 import type * as alt from "alt-server"
+import type { EntityData } from "altv-xsync-entity-shared"
 import type { Entity } from "../entity"
 import { InternalXSyncEntity } from "../internal-xsync-entity"
 import type { InternalEntityDict } from "./types"
@@ -11,6 +12,7 @@ export class InternalEntity {
     public readonly poolId: number,
     public readonly id: number,
     public readonly pos: alt.IVector3,
+    public readonly data: EntityData = {},
     public readonly dimension = 0,
     public readonly streamRange = 300,
     public readonly migrationRange = streamRange / 2,

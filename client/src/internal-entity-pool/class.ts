@@ -12,12 +12,11 @@ export class InternalEntityPool<T extends EntityData = EntityData> {
     public readonly id: number,
     public readonly EntityClass: IEntityClass<T>,
   ) {
-    EntityClass.internalPool = this as InternalEntityPool
     InternalXSyncEntity.instance.addEntityPool(this as InternalEntityPool)
   }
 
-  public addEntity (id: number, entity: Entity): void {
-    (this.entities as EntitiesDict)[id] = entity
+  public addEntity (entity: Entity): void {
+    (this.entities as EntitiesDict)[entity.id] = entity
   }
 
   public removeEntity (id: number): void {

@@ -39,12 +39,15 @@ export class InternalXSyncEntity {
           throw new Error(`[WSClientOnServerEvents.EntitiesStreamIn] unknown pool id: ${poolId}`)
         }
 
+        const posVector3 = WSVectors.WStoAlt(pos)
         const entity = new entityPool.EntityClass(
-          WSVectors.WStoAlt(pos),
+          entityId,
+          posVector3,
           data,
         )
 
-        entityPool.addEntity(entityId, entity)
+        entity.streamIn(posVector3, data)
+        entityPool.addEntity(entity)
       }
     },
 
@@ -57,13 +60,12 @@ export class InternalXSyncEntity {
           throw new Error(`[WSClientOnServerEvents.EntitiesStreamOut] unknown pool: ${poolId}`)
         }
 
-        const entity = entityPool.entities[entityId]
-
-        if (!entity) {
+        // TODO TEST REMOVE (just for tests, useless)
+        if (!entityPool.entities[entityId]) {
           throw new Error(`[WSClientOnServerEvents.EntitiesStreamOut] unknown entity: ${entityId} (pool: ${poolId})`)
         }
 
-        entityPool.addEntity(entityId, entity)
+        entityPool.removeEntity(entityId)
       }
     },
   }

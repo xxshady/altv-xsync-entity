@@ -1,1 +1,1 @@
-export type { Entity } from "./class"
+export { Entity } from "./class"

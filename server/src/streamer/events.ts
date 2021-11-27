@@ -1,14 +1,14 @@
+import type * as alt from "alt-shared"
 import type {
   IStreamerWorkerCreateEntity,
   IStreamerWorkerCreateEntityPool,
-  IStreamerWorkerUpdatePlayer,
-  PlayerId,
+  PlayersUpdateData,
   StreamerWorkerPlayersEntities,
 } from "./types"
 
 export enum StreamerWorkerEvents {
   CreatePool,
-  CreateEntity,
+  CreateEntities,
   DestroyEntity,
   PlayersUpdate,
 }
@@ -16,6 +16,7 @@ export enum StreamerWorkerEvents {
 export enum StreamerFromWorkerEvents {
   StreamChangePlayerEntities,
   NetOwnerChangeEntities,
+  EntitiesCreated,
 }
 
 export interface IStreamerFromWorkerEvent {
@@ -24,14 +25,15 @@ export interface IStreamerFromWorkerEvent {
     playersOutEntities: StreamerWorkerPlayersEntities
   ) => void
   [StreamerFromWorkerEvents.NetOwnerChangeEntities]: (netOwnersAndEntities: StreamerWorkerPlayersEntities) => void
+  [StreamerFromWorkerEvents.EntitiesCreated]: () => void
 }
 
 export interface IStreamerWorkerEvent {
   [StreamerWorkerEvents.CreatePool]: (pool: IStreamerWorkerCreateEntityPool) => void
-  [StreamerWorkerEvents.CreateEntity]: (entity: IStreamerWorkerCreateEntity) => void
+  [StreamerWorkerEvents.CreateEntities]: (entities: IStreamerWorkerCreateEntity[]) => void
   [StreamerWorkerEvents.DestroyEntity]: (entityId: number) => void
   // player updated info or removed player id array
-  [StreamerWorkerEvents.PlayersUpdate]: (players: ([PlayerId, IStreamerWorkerUpdatePlayer] | PlayerId)[]) => void
+  [StreamerWorkerEvents.PlayersUpdate]: (players: PlayersUpdateData) => void
 }
 
 export type IStreamerSharedWorkerMessage<

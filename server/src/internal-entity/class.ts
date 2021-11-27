@@ -12,10 +12,10 @@ export class InternalEntity {
     public readonly poolId: number,
     public readonly id: number,
     public readonly pos: alt.IVector3,
-    public readonly data: EntityData = {},
-    public readonly dimension = 0,
-    public readonly streamRange = 300,
-    public readonly migrationRange = streamRange / 2,
+    public readonly data: EntityData,
+    public readonly dimension: number,
+    public readonly streamRange: number,
+    public readonly migrationRange: number,
   ) {
     (InternalEntity.all as InternalEntityDict)[id] = this
     InternalXSyncEntity.instance.addEntity(this)

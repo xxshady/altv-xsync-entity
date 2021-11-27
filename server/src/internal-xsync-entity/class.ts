@@ -30,10 +30,7 @@ export class InternalXSyncEntity {
 
   public readonly wss: WSServer
   public readonly idProvider = new IdProvider()
-  public readonly streamer = new Streamer(
-    this.onEntitiesStreamIn.bind(this),
-    this.onEntitiesStreamOut.bind(this),
-  )
+  public readonly streamer: Streamer
 
   public readonly players = new Players()
 
@@ -41,6 +38,7 @@ export class InternalXSyncEntity {
 
   constructor (
     public readonly websocketPort: number,
+    streamDelay: number,
   ) {
     if (InternalXSyncEntity._instance) {
       throw new Error("InternalXSyncEntity already initialized")
@@ -53,6 +51,13 @@ export class InternalXSyncEntity {
       {
         events: {},
       },
+    )
+
+    this.streamer = new Streamer(
+      this.onEntitiesStreamIn.bind(this),
+      this.onEntitiesStreamOut.bind(this),
+      this.onEntityDestroy.bind(this),
+      streamDelay,
     )
 
     this.setupAltvEvents()
@@ -88,21 +93,32 @@ export class InternalXSyncEntity {
   }
 
   private async addPlayer (player: alt.Player) {
-    await this.wss.waitExternalIp()
-    const authCode = this.wss.addPlayer(player)
+    try {
+      await this.wss.waitExternalIp()
+      const authCode = this.wss.addPlayer(player)
 
-    alt.emitClient(
-      player,
-      ClientOnServerEvents.addPlayer,
-      authCode,
+      alt.emitClient(
+        player,
+        ClientOnServerEvents.addPlayer,
+        authCode,
 
-      // TODO wss
-      // `wss://${this.wss.externalIp}:${this.wss.port}`,
+        // TODO wss
+        // `wss://${this.wss.externalIp}:${this.wss.port}`,
 
-      `ws://${this.wss.externalIp}:${this.wss.port}`,
-    )
+        `ws://${this.wss.externalIp}:${this.wss.port}`,
+      )
 
-    this.players.add(player)
+      // TEST
+      const start = +new Date()
+
+      await this.wss.waitPlayerConnect(player)
+
+      this.log.log("player connected to ws in", +new Date() - start, "ms")
+
+      this.players.add(player)
+    } catch (e) {
+      this.log.error(e)
+    }
   }
 
   private removePlayer (player: alt.Player) {
@@ -111,7 +127,7 @@ export class InternalXSyncEntity {
   }
 
   private onEntitiesStreamIn (player: alt.Player, entities: InternalEntity[]) {
-    this.log.log("onEntitiesStreamIn", "player:", player.name, "entities:", entities.map(e => e.id))
+    // this.log.log("onEntitiesStreamIn", "player:", player.name, "entities:", entities.map(e => e.id))
 
     this.emitWSPlayer(
       player,
@@ -121,17 +137,21 @@ export class InternalXSyncEntity {
   }
 
   private onEntitiesStreamOut (player: alt.Player, entities: InternalEntity[]) {
-    this.log.log("onEntitiesStreamIn", "player:", player.name, "entities:", entities.map(e => e.id))
+    // this.log.log("onEntitiesStreamOut", "player:", player.name, "entities:", entities.map(e => e.id))
 
     this.emitWSPlayer(
       player,
       WSClientOnServerEvents.EntitiesStreamOut,
-      this.convertEntitiesToWS(entities),
+      this.convertEntitiesToIds(entities),
     )
   }
 
-  private convertEntitiesToWS (entities: InternalEntity[]): WSEntity[] {
-    return entities.map(({ poolId, id }) => [poolId, id])
+  private onEntityDestroy (player: alt.Player, entityId: number) {
+    this.emitWSPlayer(player, WSClientOnServerEvents.EntityDestroy, entityId)
+  }
+
+  private convertEntitiesToIds (entities: InternalEntity[]): number[] {
+    return entities.map(({ id }) => id)
   }
 
   private convertEntitiesToWSCreate (entities: InternalEntity[]): WSEntityCreate[] {

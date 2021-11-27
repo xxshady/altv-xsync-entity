@@ -1,5 +1,4 @@
 import type * as alt from "alt-server"
-import { createLogger } from "altv-xlogger"
 import { InternalEntity } from "../internal-entity"
 import {
   StreamerFromWorkerEvents,
@@ -13,7 +12,15 @@ import type {
 import Worker from "./streamer.worker.ts"
 import type { EntityPool } from "../entity-pool"
 import { InternalXSyncEntity } from "../internal-xsync-entity"
-import type { ICurrentPlayersUpdate } from "./types"
+import type {
+  ICurrentPlayersUpdate,
+  IEntityCreateQueue,
+  IStreamerWorkerCreateEntity,
+  PlayerId,
+  PlayersUpdateData,
+} from "./types"
+import { createLogger } from "altv-xlogger"
+import type { Entity } from "../entity"
 
 export class Streamer {
   private readonly worker = new Worker()
@@ -23,7 +30,17 @@ export class Streamer {
     pending: false,
     startMs: 0,
     removedEntityIds: {},
-    removedPlayerIds: [],
+    removedPlayerIds: {},
+  }
+
+  private readonly entitiesStreamedPlayerIds: Record<Entity["id"], Set<PlayerId>> = {}
+  private readonly playersStreamEntityIds: Record<PlayerId, Set<Entity["id"]>> = {}
+
+  private readonly entityCreateQueue: IEntityCreateQueue = {
+    chunkSize: 3000,
+    entities: [],
+    sendPromise: null,
+    started: false,
   }
 
   private readonly eventHandlers: IStreamerFromWorkerEvent = {
@@ -40,66 +57,82 @@ export class Streamer {
         removedPlayerIds,
       } = this.currentPlayersUpdate
 
-      this.log.log("[StreamChangePlayerEntities]", playersInEntities)
+      // if (Object.keys(playersInEntities).length > 0) {
+      //   this.log.log("[streamIn]")
+      //   this.log.nodeLog(playersInEntities)
+      // }
+      // if (Object.keys(playersOutEntities).length > 0) {
+      //   this.log.log("[streamOut]")
+      //   this.log.nodeLog(playersOutEntities)
+      // }
 
       for (const playerId in playersOutEntities) {
-        // TODO TEST
-        if (removedPlayerIds[playerId]) continue
-
-        const player = players[playerId]
-        const entityIds = playersOutEntities[playerId]
-
-        if (!player) {
-          this.log.error(`non exist playerid: ${playerId}`)
-          continue
-        }
-
-        for (let i = 0; i < entityIds.length; i++) {
-          const entityId = entityIds[i]
+        try {
           // TODO TEST
-          if (removedEntityIds[entityId]) continue
+          if (removedPlayerIds[playerId]) continue
 
-          const entity = entities[entityId]
+          const player = players[playerId]
+          const entityIds = playersOutEntities[playerId]
 
-          if (!entity) {
-            this.log.error(`non exist entity: ${entityId}`)
-            continue
+          if (!player) {
+            throw new Error(`[xsync-entity:streamer] non exist player id: ${playerId}`)
           }
 
-          streamOutEntities.push(entity)
-        }
+          for (let i = 0; i < entityIds.length; i++) {
+            try {
+              const entityId = entityIds[i]
 
-        this.onEntitiesStreamOut(player, streamInEntities)
+              if (removedEntityIds[entityId]) continue
+
+              const entity = entities[entityId]
+
+              if (!entity) {
+                throw new Error(`[xsync-entity:streamer] non exist entity id: ${entityId}`)
+              }
+
+              this.removeStreamEntityPlayerLink(+playerId, entityId)
+              streamOutEntities.push(entity)
+            } catch (e) {
+              this.log.error(e)
+            }
+          }
+
+          this.onEntitiesStreamOut(player, streamOutEntities)
+        } catch (e) {
+          this.log.error(e)
+        }
       }
 
       for (const playerId in playersInEntities) {
-        // TODO TEST
-        if (removedPlayerIds[playerId]) continue
+        try {
+          if (removedPlayerIds[playerId]) continue
 
-        const player = players[playerId]
-        const entityIds = playersInEntities[playerId]
+          const player = players[playerId]
+          const entityIds = playersInEntities[playerId]
 
-        if (!player) {
-          this.log.error(`non exist playerid: ${playerId}`)
-          continue
-        }
-
-        for (let i = 0; i < entityIds.length; i++) {
-          const entityId = entityIds[i]
-          // TODO TEST
-          if (removedEntityIds[entityId]) continue
-
-          const entity = entities[entityId]
-
-          if (!entity) {
-            this.log.error(`non exist entity: ${entityId}`)
-            continue
+          if (!player) {
+            throw new Error(`[xsync-entity:streamer] non exist player id: ${playerId}`)
           }
 
-          streamInEntities.push(entity)
-        }
+          for (let i = 0; i < entityIds.length; i++) {
+            const entityId = entityIds[i]
+            // TODO TEST
+            if (removedEntityIds[entityId]) continue
 
-        this.onEntitiesStreamIn(player, streamInEntities)
+            const entity = entities[entityId]
+
+            if (!entity) {
+              throw new Error(`[xsync-entity:streamer] non exist entity id: ${entityId}`)
+            }
+
+            this.addStreamEntityPlayerLink(+playerId, entityId)
+            streamInEntities.push(entity)
+          }
+
+          this.onEntitiesStreamIn(player, streamInEntities)
+        } catch (e) {
+          this.log.error(e)
+        }
       }
 
       this.clearCurrentPlayersUpdate()
@@ -108,14 +141,24 @@ export class Streamer {
     [StreamerFromWorkerEvents.NetOwnerChangeEntities]: (netOwnersAndEntities) => {
 
     },
+
+    [StreamerFromWorkerEvents.EntitiesCreated]: () => {
+      const { entityCreateQueue } = this
+
+      if (!entityCreateQueue.sendPromise) return
+
+      entityCreateQueue.sendPromise.resolve()
+      entityCreateQueue.sendPromise = null
+    },
   }
 
   constructor (
     private readonly onEntitiesStreamIn: (player: alt.Player, entities: InternalEntity[]) => void,
     private readonly onEntitiesStreamOut: (player: alt.Player, entities: InternalEntity[]) => void,
+    private readonly onEntityDestroy: (player: alt.Player, entityId: number) => void,
     streamDelay = 100,
   ) {
-    this.setupEvents()
+    this.setupWorkerEvents()
     this.setupPlayersUpdateInterval(streamDelay)
   }
 
@@ -130,45 +173,33 @@ export class Streamer {
   }
 
   public addEntity (
-    {
-      poolId,
-      id,
-      pos,
-      dimension,
-      streamRange,
-      migrationRange,
-    }: InternalEntity,
+    entity: InternalEntity,
   ): void {
-    this.emitWorker(
-      StreamerWorkerEvents.CreateEntity,
-      {
-        poolId,
-        id,
-        pos: { x: pos.x, y: pos.y },
-        dimension,
-        streamRange,
-        migrationRange,
-      },
-    )
+    this.entityCreateQueue.entities.push(entity)
+    this.startEntityCreateQueue().catch(this.log.error)
   }
 
   public removeEntity ({ id }: InternalEntity): void {
+    this.currentPlayersUpdate.removedEntityIds[id] = true
+
     this.emitWorker(StreamerWorkerEvents.DestroyEntity, id)
 
-    // TODO TEST remove & add entity while players update in process (entity id will be same)
-    const { pending, removedEntityIds } = this.currentPlayersUpdate
+    const playerIds = this.deleteEntityStreamedPlayerIds(id)
 
-    if (!pending) {
-      removedEntityIds[id] = true
+    if (!playerIds) return
+
+    for (const playerId of playerIds) {
+      const player = InternalXSyncEntity.instance.players.dict[playerId]
+
+      if (!player) continue
+
+      this.onEntityDestroy(player, id)
     }
   }
 
   public removedPlayer ({ id }: alt.Player): void {
-    const { pending, removedPlayerIds } = this.currentPlayersUpdate
-
-    if (!pending) return
-
-    removedPlayerIds.push(id)
+    this.currentPlayersUpdate.removedPlayerIds[id] = true
+    this.deletePlayerStreamEntityIds(id)
   }
 
   private emitWorker <K extends StreamerWorkerEvents> (
@@ -183,7 +214,7 @@ export class Streamer {
     this.worker.postMessage(message)
   }
 
-  private setupEvents () {
+  private setupWorkerEvents () {
     this.worker.on(
       "message",
       <K extends StreamerFromWorkerEvents> (
@@ -196,11 +227,20 @@ export class Streamer {
           return
         }
 
-        // fuck typescript complaints, i know what im doing
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        handler(...data as [firstArg: any, firstArg?: any])
+        try {
+          // fuck typescript complaints, i know what im doing
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          handler(...data as [firstArg: any, secondArg?: any])
+        } catch (e) {
+          this.log.error("error in handler from worker event")
+          this.log.error(e)
+        }
       },
     )
+
+    this.worker.on("error", (err) => {
+      this.log.error("from worker error:", err.stack)
+    })
   }
 
   private setupPlayersUpdateInterval (streamDelay: number) {
@@ -209,9 +249,18 @@ export class Streamer {
 
   private playersUpdatesProcess () {
     try {
+      if (this.currentPlayersUpdate.pending) {
+        this.log.warn(`players update process takes too long, need to increase streamDelay (> ${+new Date() - this.currentPlayersUpdate.startMs}ms) `)
+        return
+      }
       const players = InternalXSyncEntity.instance.players.array
-      const { removedPlayerIds } = this.currentPlayersUpdate
-      const playersData: Parameters<IStreamerWorkerEvent[StreamerWorkerEvents.PlayersUpdate]>[0] = []
+
+      if (!players.length) return
+
+      const {
+        removedPlayerIds,
+      } = this.currentPlayersUpdate
+      const playersData: PlayersUpdateData = []
 
       for (let i = 0; i < players.length; i++) {
         const { id, pos, dimension } = players[i]
@@ -229,9 +278,12 @@ export class Streamer {
         ]
       }
 
-      playersData.push(...removedPlayerIds)
+      playersData.push(...Object.keys(removedPlayerIds))
 
-      this.emitWorker(StreamerWorkerEvents.PlayersUpdate, playersData)
+      this.emitWorker(
+        StreamerWorkerEvents.PlayersUpdate,
+        playersData,
+      )
       this.startCurrentPlayersUpdate()
     } catch (e) {
       this.log.error(e)
@@ -241,11 +293,10 @@ export class Streamer {
   private clearCurrentPlayersUpdate () {
     const { currentPlayersUpdate } = this
 
-    this.log.log("players update elapsed ms:", (+new Date() - currentPlayersUpdate.startMs))
+    // this.log.log("players update elapsed ms:", (+new Date() - currentPlayersUpdate.startMs))
 
     currentPlayersUpdate.pending = false
     currentPlayersUpdate.startMs = 0
-    currentPlayersUpdate.removedEntityIds = {}
   }
 
   private startCurrentPlayersUpdate () {
@@ -257,8 +308,98 @@ export class Streamer {
 
     currentPlayersUpdate.pending = true
     currentPlayersUpdate.startMs = +new Date()
-    currentPlayersUpdate.removedPlayerIds = []
+    currentPlayersUpdate.removedPlayerIds = {}
+    currentPlayersUpdate.removedEntityIds = {}
+  }
 
-    this.log.log("players update start")
+  private addStreamEntityPlayerLink (playerId: number, entityId: number) {
+    const playerIds = this.entitiesStreamedPlayerIds[entityId] ?? new Set()
+    const entityIds = this.playersStreamEntityIds[playerId] ?? new Set()
+
+    playerIds.add(playerId)
+    entityIds.add(entityId)
+
+    this.entitiesStreamedPlayerIds[entityId] = playerIds
+    this.playersStreamEntityIds[playerId] = entityIds
+
+    // this.log.log("addStreamEntityPlayerLink", "player:", playerId, "entity:", entityId)
+    // this.log.nodeLog("playerIds:", playerIds, "entityIds:", entityIds)
+  }
+
+  private removeStreamEntityPlayerLink (playerId: number, entityId: number) {
+    this.entitiesStreamedPlayerIds[entityId]?.delete(playerId)
+    this.playersStreamEntityIds[playerId]?.delete(entityId)
+  }
+
+  private deletePlayerStreamEntityIds (playerId: number) {
+    const entityIds = this.playersStreamEntityIds[playerId]
+
+    if (!entityIds) return
+
+    for (const id of entityIds) {
+      this.removeStreamEntityPlayerLink(playerId, id)
+    }
+
+    delete this.playersStreamEntityIds[playerId]
+  }
+
+  private deleteEntityStreamedPlayerIds (entityId: number): Set<number> | undefined {
+    const playerIds = this.entitiesStreamedPlayerIds[entityId]
+
+    if (!playerIds) return
+
+    for (const id of playerIds) {
+      this.removeStreamEntityPlayerLink(id, entityId)
+    }
+
+    delete this.entitiesStreamedPlayerIds[entityId]
+
+    return playerIds
+  }
+
+  private async startEntityCreateQueue () {
+    const { entityCreateQueue } = this
+    const { entities, chunkSize } = entityCreateQueue
+
+    if (entityCreateQueue.started) {
+      return
+    }
+
+    entityCreateQueue.started = true
+
+    while (entities.length > 1) {
+      const entitiesToSend = entities.splice(0, chunkSize)
+      if (entitiesToSend.length < 1) return
+
+      const label = `xsync streamer entity create (${entitiesToSend[entitiesToSend.length - 1].id})`
+      console.time(label)
+      this.sendCreateEntities(entitiesToSend)
+      await this.waitEntitiesCreate()
+      console.timeEnd(label)
+    }
+
+    entityCreateQueue.started = false
+  }
+
+  private waitEntitiesCreate (): Promise<void> {
+    return new Promise<void>(resolve => {
+      this.entityCreateQueue.sendPromise = { resolve }
+    }).catch(this.log.error)
+  }
+
+  private sendCreateEntities (entities: InternalEntity[]) {
+    const _entities: IStreamerWorkerCreateEntity[] = entities.map(
+      (entity) => ({
+        ...entity,
+        pos: {
+          x: entity.pos.x,
+          y: entity.pos.y,
+        },
+      }))
+
+    this.emitWorker(
+      StreamerWorkerEvents.CreateEntities,
+      _entities,
+    )
   }
 }

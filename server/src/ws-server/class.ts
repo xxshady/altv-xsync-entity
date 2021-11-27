@@ -25,6 +25,12 @@ export class WSServer {
   private readonly eventsManager: MessageEventsManager
 
   private readonly externalIpPromise: Promise<void>
+
+  private readonly playerConnectWaits = new Map<
+  alt.Player,
+  { resolve: () => void }
+  >()
+
   private _externalIp: string | null = null
 
   constructor (
@@ -82,7 +88,8 @@ export class WSServer {
     }
 
     socket.send(message, (err) => {
-      this.log.log("[sendPlayer]", "socket.send cb err:")
+      if (!err) return
+      this.log.error(err)
       console.debug(err)
     })
   }
@@ -108,6 +115,22 @@ export class WSServer {
     this.log.log("[addPlayer]", `player id: ${player.id}`, "auth code:", authCode)
 
     return authCode
+  }
+
+  public waitPlayerConnect (player: alt.Player): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      const timer = alt.setTimeout(() => {
+        if (!this.playerConnectWaits.delete(player)) return
+        reject(new Error((`[waitPlayerConnect] connect timed out player: ${player.valid ? player.name : "disconnected"}`)))
+      }, 10000)
+
+      this.playerConnectWaits.set(player, {
+        resolve: () => {
+          alt.clearTimeout(timer)
+          resolve()
+        },
+      })
+    })
   }
 
   private addMessageHandler (handler: RawClientMessageHandler): void {
@@ -232,6 +255,13 @@ export class WSServer {
       this.onSocketMessage.bind(this, socket, intPlayerId, player),
     )
 
+    const waiter = this.playerConnectWaits.get(player)
+
+    if (waiter) {
+      waiter.resolve()
+      this.playerConnectWaits.delete(player)
+    }
+
     this.log.log(`~gl~successful connection~w~ player id: ${playerId}`)
   }
 
@@ -246,10 +276,10 @@ export class WSServer {
       return
     }
 
-    this.log.log("[onSocketMessage]", new Date().getMilliseconds())
+    // this.log.log("[onSocketMessage]", new Date().getMilliseconds())
 
     this.log.log("[onSocketMessage]", `player: ${player.id}`, "type:", data?.constructor?.name ?? typeof data, "data:")
-    console.debug(data, "bytes:", data.byteLength, Array.from(data as Buffer), data.toString())
+    // console.debug(data, "bytes:", data.byteLength, Array.from(data as Buffer), data.toString())
 
     // socket.send("ok")
     // socket.send(data)

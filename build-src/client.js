@@ -1,8 +1,11 @@
 import process from 'process'
 import { build } from 'esbuild'
-import { getSharedBuildOptions } from './shared-options'
+import { 
+  getSharedBuildOptions, 
+  typesGenerator 
+} from './shared-options'
 
-const sharedOptions = getSharedBuildOptions(process)
+const sharedOptions = getSharedBuildOptions("client", process)
 
 build({
   ...sharedOptions,
@@ -15,4 +18,4 @@ build({
     ...sharedOptions.external,
     'alt-client', 
   ]
-})
+}).then(typesGenerator("client")) 

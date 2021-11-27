@@ -10,7 +10,7 @@ import {
 } from "altv-xsync-entity-shared"
 import { WSClient } from "../ws-client"
 import { createLogger } from "altv-xlogger"
-import type { InternalEntityPool } from "../internal-entity-pool"
+import { InternalEntityPool } from "../internal-entity-pool"
 
 export class InternalXSyncEntity {
   // TODO move in shared
@@ -46,33 +46,32 @@ export class InternalXSyncEntity {
           data,
         )
 
-        entity.streamIn(posVector3, data)
-        entityPool.addEntity(entity)
+        entityPool.streamInEntity(entity)
       }
     },
 
-    [WSClientOnServerEvents.EntitiesStreamOut]: (entities) => {
-      for (let i = 0; i < entities.length; i++) {
-        const [poolId, entityId] = entities[i]
-        const entityPool = this.entityPools[poolId]
+    [WSClientOnServerEvents.EntitiesStreamOut]: (entityIds) => {
+      // this.log.log("from server stream out:", JSON.stringify(entities))
 
-        if (!entityPool) {
-          throw new Error(`[WSClientOnServerEvents.EntitiesStreamOut] unknown pool: ${poolId}`)
-        }
-
-        // TODO TEST REMOVE (just for tests, useless)
-        if (!entityPool.entities[entityId]) {
-          throw new Error(`[WSClientOnServerEvents.EntitiesStreamOut] unknown entity: ${entityId} (pool: ${poolId})`)
-        }
-
-        entityPool.removeEntity(entityId)
+      for (let i = 0; i < entityIds.length; i++) {
+        InternalEntityPool.streamOutEntity(entityIds[i])
       }
+    },
+
+    [WSClientOnServerEvents.EntityDestroy]: (entityId) => {
+      InternalEntityPool.streamOutEntity(entityId)
     },
   }
 
   private ws: WSClient<IWSClientOnServerEvent> | null = null
 
   constructor () {
+    if (InternalXSyncEntity._instance) {
+      throw new Error("InternalXSyncEntity already initialized")
+    }
+
+    InternalXSyncEntity._instance = this
+
     this.setupAltvEvents()
   }
 

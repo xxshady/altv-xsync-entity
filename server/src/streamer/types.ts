@@ -1,4 +1,5 @@
 import type * as alt from "alt-server"
+import type { InternalEntity } from "../internal-entity"
 
 export type PlayerId = alt.Player["id"]
 
@@ -13,6 +14,7 @@ export interface IStreamerWorkerCreateEntity {
 
 export interface IStreamerWorkerEntity extends IStreamerWorkerCreateEntity {
   netOwnerId: PlayerId | null
+  streamPlayerIds: Set<PlayerId>
 }
 
 export interface IStreamerWorkerEntityPool {
@@ -30,11 +32,11 @@ export interface IStreamerWorkerUpdatePlayer {
 
 export interface IStreamerWorkerPlayer {
   streamedEntityIds: Set<number>
+  oldPos: alt.IVector2
+  oldDimension: number
 }
 
-export interface IStreamerWorkerDistEntity {
-  readonly poolId: number
-  readonly id: number
+export interface IStreamerWorkerDistEntity extends IStreamerWorkerEntity {
   dist: number
 }
 
@@ -43,6 +45,24 @@ export type StreamerWorkerPlayersEntities = Record<PlayerId, number[]>
 export interface ICurrentPlayersUpdate {
   pending: boolean
   startMs: number
-  removedEntityIds: Record<number, true>
-  removedPlayerIds: PlayerId[]
+  /**
+   * entity id as string
+   */
+  removedEntityIds: Record<string, true>
+  /**
+   * player id as string
+   */
+  removedPlayerIds: Record<string, true>
+}
+
+/**
+ * player data or removed player id as string
+ */
+export type PlayersUpdateData = ([PlayerId, IStreamerWorkerUpdatePlayer] | string)[]
+
+export interface IEntityCreateQueue {
+  readonly chunkSize: number
+  readonly entities: InternalEntity[]
+  sendPromise: { resolve: () => void } | null
+  started: boolean
 }

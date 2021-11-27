@@ -1,14 +1,15 @@
 import type {
   WSEntityCreate,
-  WSEntity,
 } from "./types"
 
 export enum WSClientOnServerEvents {
   EntitiesStreamIn,
   EntitiesStreamOut,
+  EntityDestroy,
 }
 
 export interface IWSClientOnServerEvent {
   [WSClientOnServerEvents.EntitiesStreamIn]: (entities: WSEntityCreate[]) => void
-  [WSClientOnServerEvents.EntitiesStreamOut]: (entities: WSEntity[]) => void
+  [WSClientOnServerEvents.EntitiesStreamOut]: (entityIds: number[]) => void
+  [WSClientOnServerEvents.EntityDestroy]: (entityId: number) => void
 }

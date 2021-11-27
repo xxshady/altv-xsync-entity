@@ -2,6 +2,7 @@
   "name": "altv-xsync-entity-server",
   "version": "1.0.0",
   "main": "dist/main.js",
+  "types": "dist/main.d.ts",
   "files": [
     "dist/main.d.ts"
   ],

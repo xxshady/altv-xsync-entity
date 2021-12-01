@@ -87,10 +87,13 @@ export class WSServer {
       throw new Error("[sendPlayer] player wasnt connected as ws")
     }
 
+    if (socket.readyState === socket.CLOSED) {
+      throw new Error("[sendPlayer] socket closed")
+    }
+
     socket.send(message, (err) => {
       if (!err) return
       this.log.error(err)
-      console.debug(err)
     })
   }
 

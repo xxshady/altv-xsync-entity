@@ -50,7 +50,7 @@ export class WSClient<TEvents extends EventsTypeAny> {
     client.setExtraHeader("playerid", this.player.id.toString())
 
     // interval in seconds
-    client.pingInterval = 30
+    client.pingInterval = 3
 
     client.autoReconnect = false
     client.perMessageDeflate = true

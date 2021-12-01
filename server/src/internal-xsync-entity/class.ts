@@ -102,7 +102,8 @@ export class InternalXSyncEntity {
         ClientOnServerEvents.addPlayer,
         authCode,
 
-        // TODO wss
+        // TODO wss and use clientside alt.getServerIp()
+
         // `wss://${this.wss.externalIp}:${this.wss.port}`,
 
         `ws://${this.wss.externalIp}:${this.wss.port}`,

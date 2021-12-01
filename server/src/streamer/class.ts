@@ -57,14 +57,14 @@ export class Streamer {
         removedPlayerIds,
       } = this.currentPlayersUpdate
 
-      // if (Object.keys(playersInEntities).length > 0) {
-      //   this.log.log("[streamIn]")
-      //   this.log.nodeLog(playersInEntities)
-      // }
-      // if (Object.keys(playersOutEntities).length > 0) {
-      //   this.log.log("[streamOut]")
-      //   this.log.nodeLog(playersOutEntities)
-      // }
+      if (Object.keys(playersInEntities).length > 0) {
+        this.log.log("[streamIn]")
+        this.log.moreInfo(playersInEntities)
+      }
+      if (Object.keys(playersOutEntities).length > 0) {
+        this.log.log("[streamOut]")
+        this.log.moreInfo(playersOutEntities)
+      }
 
       for (const playerId in playersOutEntities) {
         try {
@@ -323,7 +323,7 @@ export class Streamer {
     this.playersStreamEntityIds[playerId] = entityIds
 
     // this.log.log("addStreamEntityPlayerLink", "player:", playerId, "entity:", entityId)
-    // this.log.nodeLog("playerIds:", playerIds, "entityIds:", entityIds)
+    // this.log.moreInfo("playerIds:", playerIds, "entityIds:", entityIds)
   }
 
   private removeStreamEntityPlayerLink (playerId: number, entityId: number) {

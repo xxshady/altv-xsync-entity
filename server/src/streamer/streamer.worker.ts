@@ -69,8 +69,10 @@ class StreamerWorker {
     },
 
     [StreamerWorkerEvents.PlayersUpdate]: (playersData) => {
-      const label = `xsync streamer worker (${this.entitiesArray.length})`
-      console.time(label)
+      // this.log.log("PlayersUpdate playersData:", playersData)
+
+      // const label = `xsync streamer worker (${this.entitiesArray.length})`
+      // console.time(label)
       const playersInEntityIds: StreamerWorkerPlayersEntities = {}
       const playersOutEntityIds: StreamerWorkerPlayersEntities = {}
 
@@ -103,6 +105,10 @@ class StreamerWorker {
           player.streamedEntityIds,
         )
 
+        // if (streamIn.length > 0) {
+        //   this.log.log(`returned streamEntitiesForPlayer player: ${playerId} streamIn:`, streamIn)
+        // }
+
         if (streamIn.length > 0) {
           playersInEntityIds[playerId] = streamIn
         }
@@ -118,7 +124,7 @@ class StreamerWorker {
         this.players[playerId] = player
       }
 
-      console.timeEnd(label)
+      // console.timeEnd(label)
 
       this.emit(
         StreamerFromWorkerEvents.StreamChangePlayerEntities,
@@ -243,23 +249,30 @@ class StreamerWorker {
 
         if (dimension === entity.dimension) continue
 
+        this.streamOutEntityPlayer(playerId, entity.id, streamedEntityIds, streamOutIds)
+
         entity.dist = Infinity
       }
-    } else {
-      for (let i = 0; i < entities.length; i++) {
-        const entity = entities[i]
 
-        if (dimension !== entity.dimension) {
-          entity.dist = Infinity
-          continue
-        }
-
-        entity.dist = dist2dWithRange(
-          entity.pos,
-          pos,
-          entity.streamRange,
-        )
+      return {
+        streamIn: streamInIds,
+        streamOut: streamOutIds,
       }
+    }
+
+    for (let i = 0; i < entities.length; i++) {
+      const entity = entities[i]
+
+      if (dimension !== entity.dimension) {
+        entity.dist = Infinity
+        continue
+      }
+
+      entity.dist = dist2dWithRange(
+        entity.pos,
+        pos,
+        entity.streamRange,
+      )
     }
 
     const sortedEntities = entities.sort(this.sortEntityDists)

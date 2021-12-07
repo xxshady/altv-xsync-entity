@@ -8,18 +8,15 @@
     "server"
   ],
   "scripts": {
-    "build:shared": "node --es-module-specifier-resolution=node build-src/shared",  
+    "build:shared": "node --es-module-specifier-resolution=node build-src/shared",
     "build:client": "node --es-module-specifier-resolution=node build-src/client",
     "build:server": "node --es-module-specifier-resolution=node build-src/server",
-    
     "watch:shared": "node --es-module-specifier-resolution=node build-src/shared -w",
     "watch:client": "node --es-module-specifier-resolution=node build-src/client -w",
     "watch:server": "node --es-module-specifier-resolution=node build-src/server -w",
-
     "types:shared": "dts-bundle-generator -o shared/dist/main.d.ts --inline-declare-externals shared/src/main.ts",
     "types:client": "dts-bundle-generator -o client/dist/main.d.ts --inline-declare-externals client/src/main.ts",
     "types:server": "dts-bundle-generator -o server/dist/main.d.ts --inline-declare-externals server/src/main.ts",
-
     "build": "concurrently 'yarn:build:*'",
     "watch": "concurrently 'yarn:watch:*'"
   },

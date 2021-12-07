@@ -5,13 +5,16 @@ import type {
   IWebSocketServerOptions,
   IWebSocketPlayer,
   RawClientMessageHandler,
+  SocketCloseHandler,
 } from "./types"
 import http from "http"
+import https from "https"
 import type net from "net"
 import uuidv4 from "../utils/uuidv4"
 import { createLogger } from "altv-xlogger"
 import { MessageEventsManager } from "altv-xsync-entity-shared"
 import { getExternalIp } from "../utils/external-ip"
+import fs from "fs"
 
 export class WSServer {
   private readonly log = createLogger("WSServer")
@@ -31,15 +34,34 @@ export class WSServer {
   { resolve: () => void }
   >()
 
+  private readonly socketCloseHandler: SocketCloseHandler
+
   private _externalIp: string | null = null
 
   constructor (
     public readonly port: number,
-    { events }: IWebSocketServerOptions,
+    {
+      localhost,
+      events,
+      keyPath,
+      certPath,
+      socketClose,
+    }: IWebSocketServerOptions,
   ) {
     this.log.log(`init server on port: ${port}...`)
 
-    const server = new http.Server()
+    let server: https.Server | http.Server
+
+    if (localhost) {
+      this.log.log("init HTTP server")
+      server = new http.Server()
+    } else {
+      this.log.log("init HTTPS server")
+      server = new https.Server({
+        cert: fs.readFileSync(certPath),
+        key: fs.readFileSync(keyPath),
+      })
+    }
 
     const wss = new ws.Server({
       noServer: true,
@@ -49,6 +71,7 @@ export class WSServer {
     this.wss = wss
     this.externalIpPromise = this.initExternalIp()
     this.externalIpPromise.catch(this.onInitExternalIpError.bind(this))
+    this.socketCloseHandler = socketClose
 
     this.setupHttpEvents(server)
     this.setupWssEvents(wss)
@@ -120,6 +143,20 @@ export class WSServer {
     return authCode
   }
 
+  public removePlayer (player: alt.Player): void {
+    const playerData = this.players.get(player.id)
+
+    if (!playerData) {
+      throw new Error(`player not added: ${player.name} ${player.id}`)
+    }
+
+    try {
+      playerData.socket?.close()
+    } catch (e) {}
+
+    this.players.delete(player.id)
+  }
+
   public waitPlayerConnect (player: alt.Player): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const timer = alt.setTimeout(() => {
@@ -140,9 +177,21 @@ export class WSServer {
     this.messageHandlers.add(handler)
   }
 
-  private setupHttpEvents (server: http.Server) {
+  private setupHttpEvents (server: https.Server | http.Server) {
+    server.on("error", this.onHttpError.bind(this))
     server.on("upgrade", this.onHttpUpgrade.bind(this))
     server.on("listening", this.onHttpListening.bind(this))
+  }
+
+  private onHttpError (error: Error & { code?: string }) {
+    this.log.error("http(s) server error")
+    this.log.error(error)
+
+    if (error.code === "EADDRINUSE") process.exit()
+  }
+
+  private onHttpListening () {
+    this.log.log(`~gl~http(s) server started listening on port: ${this.port}`)
   }
 
   private onHttpUpgrade (
@@ -211,10 +260,6 @@ export class WSServer {
     wss.on("error", this.onError.bind(this))
   }
 
-  private onHttpListening () {
-    this.log.log("~gl~http server started listening")
-  }
-
   private onError (error: Error) {
     this.log.error(`[error] ${error.stack}`)
   }
@@ -257,6 +302,14 @@ export class WSServer {
       "message",
       this.onSocketMessage.bind(this, socket, intPlayerId, player),
     )
+    socket.on(
+      "close",
+      this.onSocketClose.bind(this, socket, intPlayerId, player),
+    )
+    socket.on(
+      "error",
+      this.onSocketError.bind(this, socket, intPlayerId, player),
+    )
 
     const waiter = this.playerConnectWaits.get(player)
 
@@ -290,6 +343,30 @@ export class WSServer {
     for (const handler of this.messageHandlers) {
       handler(player, data)
     }
+  }
+
+  private onSocketClose (
+    socket: ws.WebSocket,
+    playerId: number,
+    player: alt.Player,
+  ) {
+    if (!player.valid) return
+
+    this.socketCloseHandler(player)
+
+    this.log.warn(`socket close player: ${player.name} [${playerId}]`)
+  }
+
+  private onSocketError (
+    socket: ws.WebSocket,
+    playerId: number,
+    player: alt.Player,
+    error: Error,
+  ) {
+    const playerName = player.valid ? player.name : "(disconnected)"
+
+    this.log.error(`socket error player: ${playerName} [${playerId}]`)
+    this.log.error(error)
   }
 
   private setupAltEvents () {

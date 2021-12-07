@@ -1,7 +1,7 @@
 export enum ClientOnServerEvents {
-  addPlayer = "xsyncEntity:addPlayer",
+  AddPlayer = "xsyncEntity:addPlayer",
 }
 
 export interface IClientOnServerEvent {
-  [ClientOnServerEvents.addPlayer]: (authCode: string, serverUrl: string) => void
+  [ClientOnServerEvents.AddPlayer]: (authCode: string, serverUrl: string, serverPort: number) => void
 }

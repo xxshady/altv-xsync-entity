@@ -15,6 +15,12 @@ export interface IWebSocketPlayer {
 
 export type RawClientMessageHandler = (player: alt.Player, message: Buffer) => void
 
+export type SocketCloseHandler = (player: alt.Player) => void
+
 export interface IWebSocketServerOptions {
   events: Record<string, (player: alt.Player, ...args: unknown[]) => void>
+  certPath: string
+  keyPath: string
+  localhost?: boolean
+  socketClose: SocketCloseHandler
 }

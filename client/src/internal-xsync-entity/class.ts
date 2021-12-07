@@ -11,6 +11,7 @@ import {
 import { WSClient } from "../ws-client"
 import { createLogger } from "altv-xlogger"
 import { InternalEntityPool } from "../internal-entity-pool"
+import { getServerIp } from "../utils/get-server-ip"
 
 export class InternalXSyncEntity {
   // TODO move in shared
@@ -85,18 +86,40 @@ export class InternalXSyncEntity {
 
   private setupAltvEvents () {
     alt.onServer(
-      ClientOnServerEvents.addPlayer,
-      this.onAddPlayer.bind(this) as IClientOnServerEvent[ClientOnServerEvents.addPlayer],
+      ClientOnServerEvents.AddPlayer,
+      this.onAddPlayer.bind(this) as IClientOnServerEvent[ClientOnServerEvents.AddPlayer],
     )
   }
 
-  private onAddPlayer (authCode: string, serverUrl: string) {
-    this.log.log("onAddPlayer", authCode, serverUrl)
+  private onAddPlayer (authCode: string, serverUrl: string, serverPort: number) {
+    let fullServerUrl: string
 
-    const ws = new WSClient<IWSClientOnServerEvent>(serverUrl, authCode, {
+    if (serverUrl === "localhost") {
+      fullServerUrl = `ws://${getServerIp()}:${serverPort}`
+    } else {
+      fullServerUrl = `${serverUrl}:${serverPort}`
+    }
+
+    this.log.log("onAddPlayer", authCode, serverUrl, fullServerUrl)
+
+    const ws = new WSClient<IWSClientOnServerEvent>(fullServerUrl, authCode, {
       events: this.WSEventHandlers,
+      close: this.onWSClose.bind(this),
     })
 
     this.ws = ws
+  }
+
+  private onWSClose () {
+    this.log.log("on ws close destroy entities")
+
+    // TODO destroy only streamed in entities
+    for (const entityId in InternalEntityPool.entities) {
+      try {
+        InternalEntityPool.entities[entityId]?.streamOut()
+      } catch (e) {
+        this.log.error(e)
+      }
+    }
   }
 }

@@ -2,17 +2,19 @@ import * as alt from "alt-server"
 import { IdProvider } from "../id-provider"
 import { WSServer } from "../ws-server"
 import { Streamer } from "../streamer"
-import type { IWSClientOnServerEvent, WSEntity, WSEntityCreate } from "altv-xsync-entity-shared"
+import type {
+  IWSClientOnServerEvent,
+  WSEntityCreate,
+} from "altv-xsync-entity-shared"
 import {
   WSVectors,
-
   ClientOnServerEvents,
   WSClientOnServerEvents,
 } from "altv-xsync-entity-shared"
-
 import { Players } from "../players"
 import { createLogger } from "altv-xlogger"
 import type { InternalEntity } from "../internal-entity"
+import type { IWSSOptions } from "../xsync-entity/types"
 
 export class InternalXSyncEntity {
   // TODO move in shared
@@ -29,16 +31,20 @@ export class InternalXSyncEntity {
   }
 
   public readonly wss: WSServer
-  public readonly idProvider = new IdProvider()
   public readonly streamer: Streamer
-
+  public readonly idProvider = new IdProvider()
   public readonly players = new Players()
 
   private readonly log = createLogger("InternalXSyncEntity")
+  private readonly domainName: string
+  private readonly wssServerAddress: {
+    url: string
+    port: number
+  }
 
   constructor (
-    public readonly websocketPort: number,
     streamDelay: number,
+    wss: Required<IWSSOptions>,
   ) {
     if (InternalXSyncEntity._instance) {
       throw new Error("InternalXSyncEntity already initialized")
@@ -46,10 +52,27 @@ export class InternalXSyncEntity {
 
     InternalXSyncEntity._instance = this
 
+    const {
+      certPath,
+      keyPath,
+      domainName,
+      port,
+      localhost,
+    } = wss
+
+    this.domainName = domainName
+    this.wssServerAddress = localhost
+      ? { url: "localhost", port }
+      : { url: `wss://${domainName}:${port}`, port }
+
     this.wss = new WSServer(
-      websocketPort,
+      port,
       {
         events: {},
+        certPath,
+        keyPath,
+        localhost,
+        socketClose: this.onWSSocketClose.bind(this),
       },
     )
 
@@ -94,19 +117,14 @@ export class InternalXSyncEntity {
 
   private async addPlayer (player: alt.Player) {
     try {
-      await this.wss.waitExternalIp()
       const authCode = this.wss.addPlayer(player)
 
       alt.emitClient(
         player,
-        ClientOnServerEvents.addPlayer,
+        ClientOnServerEvents.AddPlayer,
         authCode,
-
-        // TODO wss and use clientside alt.getServerIp()
-
-        // `wss://${this.wss.externalIp}:${this.wss.port}`,
-
-        `ws://${this.wss.externalIp}:${this.wss.port}`,
+        this.wssServerAddress.url,
+        this.wssServerAddress.port,
       )
 
       // TEST
@@ -125,6 +143,7 @@ export class InternalXSyncEntity {
   private removePlayer (player: alt.Player) {
     this.streamer.removedPlayer(player)
     this.players.remove(player)
+    this.wss.removePlayer(player)
   }
 
   private onEntitiesStreamIn (player: alt.Player, entities: InternalEntity[]) {
@@ -169,5 +188,12 @@ export class InternalXSyncEntity {
         WSVectors.altToWS(pos),
         data,
       ])
+  }
+
+  private onWSSocketClose (player: alt.Player) {
+    this.log.log("socket close player:", player.name, "trying to add again..")
+
+    this.removePlayer(player)
+    this.addPlayer(player).catch(this.log.error)
   }
 }

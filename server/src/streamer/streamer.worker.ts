@@ -241,6 +241,7 @@ class StreamerWorker {
 
     const entities = this.entitiesArray
 
+    // TODO TEST 2 players
     if (oldDimension === dimension && oldPos.x === pos.x && oldPos.y === pos.y) {
       // this.log.log("old pos & dimension, skip distance checks")
 

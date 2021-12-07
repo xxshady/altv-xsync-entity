@@ -19,12 +19,18 @@ export class WSClient<TEvents extends EventsTypeAny> {
   private readonly waitConnectPromise: IWaitConnectPromise
   private readonly client: alt.WebSocketClient
 
+  private readonly socketCloseHandler: () => void
+
   private connected = false
 
   constructor (url: string, authCode: string, options: IWebSocketOptions<TEvents>) {
+    this.log.log(`connect url: ${url}`)
+
     this.client = this.initClient(authCode, url)
     this.waitConnectPromise = this.initWaitConnectPromise()
     this.eventsManager = this.initUserEvents(options)
+
+    this.socketCloseHandler = options.close
 
     this.setupWsClientEvents(this.client)
   }
@@ -50,7 +56,7 @@ export class WSClient<TEvents extends EventsTypeAny> {
     client.setExtraHeader("playerid", this.player.id.toString())
 
     // interval in seconds
-    client.pingInterval = 3
+    client.pingInterval = 15
 
     client.autoReconnect = false
     client.perMessageDeflate = true
@@ -80,6 +86,8 @@ export class WSClient<TEvents extends EventsTypeAny> {
     this.waitConnectPromise.reject(new Error(reason))
 
     this.log.error("[close]", "code:", code, "reason:", reason)
+
+    this.socketCloseHandler()
   }
 
   private onMessage (message: string) {

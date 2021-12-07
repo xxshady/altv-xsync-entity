@@ -9,6 +9,7 @@ export type EventsTypeAny = Record<any, any>
 
 export interface IWebSocketOptions<TEvents extends EventsTypeAny> {
   events: TEvents
+  close: () => void
 }
 
 export type EventsType = Record<string, (...args: unknown[]) => void>

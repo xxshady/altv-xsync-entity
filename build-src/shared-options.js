@@ -25,7 +25,12 @@ export const typesGenerator = (side) =>
     
     console.log(`[generate-types:${side}]`)
 
+    if (typesGenerator.child) {
+      typesGenerator.child.kill()
+    }
+
     const child = exec(`yarn run types:${side}`)
+    typesGenerator.child = child
 
     child.stdout.pipe(process.stdout)
     child.stderr.pipe(process.stderr)
@@ -33,6 +38,10 @@ export const typesGenerator = (side) =>
     child.stdout.on("data", (chunk) => {
       chunk = chunk + ""
       if (!chunk.startsWith('Done in')) return
+      child.kill()
+    })
+
+    process.on("SIGINT", () => {
       child.kill()
     })
   }

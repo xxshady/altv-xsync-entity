@@ -8,7 +8,8 @@ import type { IEntityClass } from "./types"
 type EntitiesDict = Record<number, Entity>
 
 export class InternalEntityPool<T extends EntityData = EntityData> {
-  private static readonly entities: EntitiesDict = {}
+  public static readonly entities: Readonly<EntitiesDict> = {}
+
   private static readonly log = createLogger("InternalEntityPool")
 
   public static streamOutEntity (id: number): void {
@@ -20,7 +21,7 @@ export class InternalEntityPool<T extends EntityData = EntityData> {
     }
 
     entity.streamOut()
-    delete this.entities[id]
+    delete (this.entities as EntitiesDict)[id]
   }
 
   private readonly log: ILogger
@@ -35,7 +36,7 @@ export class InternalEntityPool<T extends EntityData = EntityData> {
   }
 
   public streamInEntity (entity: Entity): void {
-    InternalEntityPool.entities[entity.id] = entity
+    (InternalEntityPool.entities as EntitiesDict)[entity.id] = entity
     entity.streamIn(entity.pos, entity.data)
   }
 }

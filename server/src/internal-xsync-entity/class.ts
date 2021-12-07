@@ -36,7 +36,6 @@ export class InternalXSyncEntity {
   public readonly players = new Players()
 
   private readonly log = createLogger("InternalXSyncEntity")
-  private readonly domainName: string
   private readonly wssServerAddress: {
     url: string
     port: number
@@ -60,7 +59,6 @@ export class InternalXSyncEntity {
       localhost,
     } = wss
 
-    this.domainName = domainName
     this.wssServerAddress = localhost
       ? { url: "localhost", port }
       : { url: `wss://${domainName}:${port}`, port }

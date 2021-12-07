@@ -13,7 +13,6 @@ import type net from "net"
 import uuidv4 from "../utils/uuidv4"
 import { createLogger } from "altv-xlogger"
 import { MessageEventsManager } from "altv-xsync-entity-shared"
-import { getExternalIp } from "../utils/external-ip"
 import fs from "fs"
 
 export class WSServer {
@@ -27,16 +26,12 @@ export class WSServer {
   private readonly wss: ws.Server
   private readonly eventsManager: MessageEventsManager
 
-  private readonly externalIpPromise: Promise<void>
-
   private readonly playerConnectWaits = new Map<
   alt.Player,
   { resolve: () => void }
   >()
 
   private readonly socketCloseHandler: SocketCloseHandler
-
-  private _externalIp: string | null = null
 
   constructor (
     public readonly port: number,
@@ -69,28 +64,12 @@ export class WSServer {
 
     this.eventsManager = this.initUserEvents(events)
     this.wss = wss
-    this.externalIpPromise = this.initExternalIp()
-    this.externalIpPromise.catch(this.onInitExternalIpError.bind(this))
     this.socketCloseHandler = socketClose
 
     this.setupHttpEvents(server)
     this.setupWssEvents(wss)
     this.setupAltEvents()
     server.listen(port)
-  }
-
-  public get externalIp (): string {
-    const { _externalIp } = this
-
-    if (!_externalIp) {
-      throw new Error("external ip has not been getted yet")
-    }
-
-    return _externalIp
-  }
-
-  public waitExternalIp (): Promise<void> {
-    return this.externalIpPromise
   }
 
   public sendPlayer (player: alt.Player, eventName: string, ...args: unknown[]): void {
@@ -400,18 +379,5 @@ export class WSServer {
 
   private generatePlayerAuthCode (): string {
     return uuidv4()
-  }
-
-  private async initExternalIp (): Promise<void> {
-    const ip = await getExternalIp()
-
-    this.log.log("~gl~received external ip:", ip)
-
-    this._externalIp = ip
-  }
-
-  private onInitExternalIpError (e: Error) {
-    this.log.error("failed get external ip")
-    this.log.error(e)
   }
 }

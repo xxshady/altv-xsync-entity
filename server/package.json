@@ -4,7 +4,8 @@
   "main": "dist/main.js",
   "types": "dist/main.d.ts",
   "files": [
-    "dist/main.d.ts"
+    "dist/main.d.ts",
+    "dist/streamer.worker.js"
   ],
   "license": "MIT",
   "peerDependencies": {

@@ -17,4 +17,8 @@ export class Players {
     this.array.splice(idx, 1)
     delete this.dict[player.id]
   }
+
+  public has (player: alt.Player): boolean {
+    return !!this.dict[player.id]
+  }
 }

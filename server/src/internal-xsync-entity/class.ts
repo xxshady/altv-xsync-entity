@@ -139,8 +139,10 @@ export class InternalXSyncEntity {
   }
 
   private removePlayer (player: alt.Player) {
-    this.streamer.removedPlayer(player)
+    if (!this.players.has(player)) return
+
     this.players.remove(player)
+    this.streamer.removePlayer(player)
     this.wss.removePlayer(player)
   }
 
@@ -189,7 +191,7 @@ export class InternalXSyncEntity {
   }
 
   private onWSSocketClose (player: alt.Player) {
-    this.log.log("socket close player:", player.name, "trying to add again..")
+    this.log.warn("socket close player:", player.name, "trying to add again..")
 
     this.removePlayer(player)
     this.addPlayer(player).catch(this.log.error)

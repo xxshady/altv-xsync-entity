@@ -17,7 +17,6 @@ import type {
   StreamerWorkerPlayersEntities,
 } from "./types"
 import { dist2dWithRange } from "../utils/dist-2d-range"
-import { InternalEntity } from "../internal-entity"
 
 class StreamerWorker {
   private readonly pools: Record<number, IStreamerWorkerEntityPool> = {}
@@ -28,6 +27,8 @@ class StreamerWorker {
    * array for faster iteration through it in for loop
    */
   private entitiesArray: IStreamerWorkerDistEntity[] = []
+  private oldEntitiesSize = 0
+  private entitiesSizeBigger = false
 
   private readonly log = {
     prefix: "[xsync-entity:streamer:worker]",
@@ -69,12 +70,14 @@ class StreamerWorker {
     },
 
     [StreamerWorkerEvents.PlayersUpdate]: (playersData) => {
-      // this.log.log("PlayersUpdate playersData:", playersData)
-
       // const label = `xsync streamer worker (${this.entitiesArray.length})`
       // console.time(label)
       const playersInEntityIds: StreamerWorkerPlayersEntities = {}
       const playersOutEntityIds: StreamerWorkerPlayersEntities = {}
+      const entitiesSize = this.entitiesArray.length
+
+      this.entitiesSizeBigger = entitiesSize > this.oldEntitiesSize
+      this.oldEntitiesSize = entitiesSize
 
       for (let i = 0; i < playersData.length; i++) {
         const playerDataOrId = playersData[i]
@@ -89,8 +92,8 @@ class StreamerWorker {
 
         const player = this.players[playerId] ?? {
           streamedEntityIds: new Set(),
-          oldPos: pos2d,
-          oldDimension: dimension,
+          oldPos: { x: Infinity, y: Infinity },
+          oldDimension: Infinity,
         }
 
         const {
@@ -104,10 +107,6 @@ class StreamerWorker {
           player.oldDimension,
           player.streamedEntityIds,
         )
-
-        // if (streamIn.length > 0) {
-        //   this.log.log(`returned streamEntitiesForPlayer player: ${playerId} streamIn:`, streamIn)
-        // }
 
         if (streamIn.length > 0) {
           playersInEntityIds[playerId] = streamIn
@@ -137,7 +136,7 @@ class StreamerWorker {
       const entity = this.entities[entityId]
 
       if (!entity) {
-        this.log.error(`[PlayersUpdate] unknown removed entity id: ${entityId}`)
+        this.log.error(`[DestroyEntity] unknown removed entity id: ${entityId}`)
         return
       }
 
@@ -148,11 +147,11 @@ class StreamerWorker {
       delete this.entities[entityId]
 
       this.updateEntitiesArray()
+      this.oldEntitiesSize = this.entitiesArray.length
     },
   }
 
   constructor () {
-    // this.log.log("worker started")
     this.setupEvents()
   }
 
@@ -197,7 +196,7 @@ class StreamerWorker {
        * (if we just passed a reference to the object from {@link StreamerWorker#entities},
        * it would significantly degrade performance in the for loop
        *
-       *  also i spent many hours to understand this :)
+       *  also i spent many hours to understand this shit
        * )
        */
       const {
@@ -242,8 +241,8 @@ class StreamerWorker {
     const entities = this.entitiesArray
 
     // TODO TEST 2 players
-    if (oldDimension === dimension && oldPos.x === pos.x && oldPos.y === pos.y) {
-      // this.log.log("old pos & dimension, skip distance checks")
+    if (!this.entitiesSizeBigger && oldDimension === dimension && oldPos.x === pos.x && oldPos.y === pos.y) {
+      // this.log.log("old pos & dimension && entities size, skip distance checks")
 
       for (let i = 0; i < entities.length; i++) {
         const entity = entities[i]

@@ -68,7 +68,6 @@ export class WSServer {
 
     this.setupHttpEvents(server)
     this.setupWssEvents(wss)
-    this.setupAltEvents()
     server.listen(port)
   }
 
@@ -332,8 +331,6 @@ export class WSServer {
     if (!player.valid) return
 
     this.socketCloseHandler(player)
-
-    this.log.warn(`socket close player: ${player.name} [${playerId}]`)
   }
 
   private onSocketError (
@@ -346,23 +343,6 @@ export class WSServer {
 
     this.log.error(`socket error player: ${playerName} [${playerId}]`)
     this.log.error(error)
-  }
-
-  private setupAltEvents () {
-    alt.on(
-      "playerDisconnect",
-      this.onPlayerDisconnect.bind(this) as alt.IServerEvent["playerDisconnect"],
-    )
-  }
-
-  private onPlayerDisconnect (player: alt.Player) {
-    const { id } = player
-    const playerData = this.players.get(id)
-
-    if (!playerData) return
-
-    this.players.delete(id)
-    playerData.socket?.close()
   }
 
   private initUserEvents (events: IWebSocketServerOptions["events"]): MessageEventsManager {

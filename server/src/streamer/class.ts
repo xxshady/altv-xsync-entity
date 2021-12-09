@@ -57,14 +57,14 @@ export class Streamer {
         removedPlayerIds,
       } = this.currentPlayersUpdate
 
-      // if (Object.keys(playersInEntities).length > 0) {
-      //   this.log.log("[streamIn]")
-      //   this.log.moreInfo(playersInEntities)
-      // }
-      // if (Object.keys(playersOutEntities).length > 0) {
-      //   this.log.log("[streamOut]")
-      //   this.log.moreInfo(playersOutEntities)
-      // }
+      if (Object.keys(playersInEntities).length > 0) {
+        this.log.log("[streamIn]")
+        this.log.moreInfo(playersInEntities)
+      }
+      if (Object.keys(playersOutEntities).length > 0) {
+        this.log.log("[streamOut]")
+        this.log.moreInfo(playersOutEntities)
+      }
 
       for (const playerId in playersOutEntities) {
         try {
@@ -82,7 +82,11 @@ export class Streamer {
             try {
               const entityId = entityIds[i]
 
-              if (removedEntityIds[entityId]) continue
+              if (removedEntityIds[entityId]) {
+                // TEST
+                this.log.log(`skip streamIn removedEntityId: ${entityId}`)
+                continue
+              }
 
               const entity = entities[entityId]
 
@@ -175,6 +179,8 @@ export class Streamer {
   public addEntity (
     entity: InternalEntity,
   ): void {
+    this.log.log(`addEntity ${entity.id} ${entity.pos}`)
+
     this.entityCreateQueue.entities.push(entity)
     this.startEntityCreateQueue().catch(this.log.error)
   }
@@ -197,7 +203,7 @@ export class Streamer {
     }
   }
 
-  public removedPlayer ({ id }: alt.Player): void {
+  public removePlayer ({ id }: alt.Player): void {
     this.currentPlayersUpdate.removedPlayerIds[id] = true
     this.deletePlayerStreamEntityIds(id)
   }
@@ -244,10 +250,10 @@ export class Streamer {
   }
 
   private setupPlayersUpdateInterval (streamDelay: number) {
-    setInterval(this.playersUpdatesProcess.bind(this), streamDelay)
+    setInterval(this.playersUpdateProcess.bind(this), streamDelay)
   }
 
-  private playersUpdatesProcess () {
+  private playersUpdateProcess () {
     try {
       if (this.currentPlayersUpdate.pending) {
         this.log.warn(`players update process takes too long, need to increase streamDelay (> ${+new Date() - this.currentPlayersUpdate.startMs}ms) `)
@@ -349,7 +355,7 @@ export class Streamer {
     if (!playerIds) return
 
     for (const id of playerIds) {
-      this.removeStreamEntityPlayerLink(id, entityId)
+      this.playersStreamEntityIds[id]?.delete(entityId)
     }
 
     delete this.entitiesStreamedPlayerIds[entityId]
@@ -367,7 +373,7 @@ export class Streamer {
 
     entityCreateQueue.started = true
 
-    while (entities.length > 1) {
+    while (entities.length > 0) {
       const entitiesToSend = entities.splice(0, chunkSize)
       if (entitiesToSend.length < 1) return
 

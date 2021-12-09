@@ -11,8 +11,5 @@
     "@altv/types-server": "1.x",
     "@altv/types-shared": "1.x"
   },
-  "dependencies": {
-    "ws-esm": "^8.2.10"
-  },
   "type": "module"
 }

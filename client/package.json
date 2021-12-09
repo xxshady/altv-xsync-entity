@@ -11,7 +11,5 @@
     "@altv/types-client": "1.x",
     "@altv/types-shared": "1.x"
   },
-  "dependencies": {
-    "altv-xsync-entity-shared": "^1.0.0"
-  }
+  "type": "module"
 }

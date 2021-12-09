@@ -1,0 +1,17 @@
+{
+  "version": "1.0.0",
+  "npmClient": "yarn",
+  "command": {
+    "bootstrap": {
+      "ignore": "component-*",
+      "npmClientArgs": [
+        "--no-package-lock"
+      ]
+    }
+  },
+  "packages": [
+    "shared",
+    "client",
+    "server"
+  ]
+}

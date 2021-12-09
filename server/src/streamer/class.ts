@@ -57,14 +57,14 @@ export class Streamer {
         removedPlayerIds,
       } = this.currentPlayersUpdate
 
-      if (Object.keys(playersInEntities).length > 0) {
-        this.log.log("[streamIn]")
-        this.log.moreInfo(playersInEntities)
-      }
-      if (Object.keys(playersOutEntities).length > 0) {
-        this.log.log("[streamOut]")
-        this.log.moreInfo(playersOutEntities)
-      }
+      // if (Object.keys(playersInEntities).length > 0) {
+      //   this.log.log("[streamIn]")
+      //   this.log.moreInfo(playersInEntities)
+      // }
+      // if (Object.keys(playersOutEntities).length > 0) {
+      //   this.log.log("[streamOut]")
+      //   this.log.moreInfo(playersOutEntities)
+      // }
 
       for (const playerId in playersOutEntities) {
         try {
@@ -83,8 +83,6 @@ export class Streamer {
               const entityId = entityIds[i]
 
               if (removedEntityIds[entityId]) {
-                // TEST
-                this.log.log(`skip streamIn removedEntityId: ${entityId}`)
                 continue
               }
 
@@ -120,7 +118,6 @@ export class Streamer {
 
           for (let i = 0; i < entityIds.length; i++) {
             const entityId = entityIds[i]
-            // TODO TEST
             if (removedEntityIds[entityId]) continue
 
             const entity = entities[entityId]

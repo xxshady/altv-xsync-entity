@@ -125,7 +125,6 @@ export class InternalXSyncEntity {
         this.wssServerAddress.port,
       )
 
-      // TEST
       const start = +new Date()
 
       await this.wss.waitPlayerConnect(player)

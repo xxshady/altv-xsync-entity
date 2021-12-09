@@ -270,12 +270,6 @@ export class WSServer {
 
     playerData.socket = socket
 
-    // TEST
-
-    // const playerId = 0
-    // const intPlayerId = 0
-    // const player = { name: "test", id: playerId, valid: true }
-
     socket.on(
       "message",
       this.onSocketMessage.bind(this, socket, intPlayerId, player),

@@ -9,7 +9,7 @@ import {
   WSClientOnServerEvents,
 } from "altv-xsync-entity-shared"
 import { WSClient } from "../ws-client"
-import { createLogger } from "altv-xlogger"
+import { createLogger, LogLevel } from "altv-xlogger"
 import { InternalEntityPool } from "../internal-entity-pool"
 import { getServerIp } from "../utils/get-server-ip"
 
@@ -27,11 +27,16 @@ export class InternalXSyncEntity {
     return _instance
   }
 
-  private readonly log = createLogger("XSyncEntity")
+  private readonly log = createLogger("XSyncEntity", {
+    logLevel: ___DEV_MODE ? LogLevel.Info : LogLevel.Warn,
+  })
+
   private readonly entityPools: Record<InternalEntityPool["id"], InternalEntityPool> = {}
 
   private readonly WSEventHandlers: IWSClientOnServerEvent = {
     [WSClientOnServerEvents.EntitiesStreamIn]: (entities) => {
+      this.log.log(`stream in: ${entities.length}`)
+
       for (let i = 0; i < entities.length; i++) {
         const [poolId, entityId, pos, data] = entities[i]
         const entityPool = this.entityPools[poolId]
@@ -52,7 +57,7 @@ export class InternalXSyncEntity {
     },
 
     [WSClientOnServerEvents.EntitiesStreamOut]: (entityIds) => {
-      // this.log.log("from server stream out:", JSON.stringify(entities))
+      this.log.log(`stream out: ${entityIds.length}`)
 
       for (let i = 0; i < entityIds.length; i++) {
         InternalEntityPool.streamOutEntity(entityIds[i])
@@ -94,10 +99,13 @@ export class InternalXSyncEntity {
   private onAddPlayer (authCode: string, serverUrl: string, serverPort: number) {
     let fullServerUrl: string
 
-    if (serverUrl === "localhost") {
-      fullServerUrl = `ws://${getServerIp()}:${serverPort}`
+    if (serverUrl.startsWith("localhost")) {
+      // serverUrl is: localhost:<port>
+      const port = serverUrl.slice(serverUrl.indexOf(":") + 1)
+
+      fullServerUrl = `ws://${getServerIp()}:${port}`
     } else {
-      fullServerUrl = `${serverUrl}:${serverPort}`
+      fullServerUrl = `${serverUrl}`
     }
 
     this.log.log("onAddPlayer", authCode, serverUrl, fullServerUrl)

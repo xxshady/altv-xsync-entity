@@ -176,8 +176,6 @@ export class Streamer {
   public addEntity (
     entity: InternalEntity,
   ): void {
-    this.log.log(`addEntity ${entity.id} ${entity.pos}`)
-
     this.entityCreateQueue.entities.push(entity)
     this.startEntityCreateQueue().catch(this.log.error)
   }

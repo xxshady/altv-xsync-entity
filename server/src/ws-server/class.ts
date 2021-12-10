@@ -36,7 +36,7 @@ export class WSServer {
   constructor (
     public readonly port: number,
     {
-      localhost,
+      useWss,
       events,
       keyPath,
       certPath,
@@ -47,15 +47,15 @@ export class WSServer {
 
     let server: https.Server | http.Server
 
-    if (localhost) {
-      this.log.log("init HTTP server")
-      server = new http.Server()
-    } else {
-      this.log.log("init HTTPS server")
+    if (useWss) {
+      this.log.log("init wss (HTTPS) server")
       server = new https.Server({
         cert: fs.readFileSync(certPath),
         key: fs.readFileSync(keyPath),
       })
+    } else {
+      this.log.log("init ws (HTTP) server")
+      server = new http.Server()
     }
 
     const wss = new ws.Server({
@@ -239,7 +239,7 @@ export class WSServer {
   }
 
   private onError (error: Error) {
-    this.log.error(`[error] ${error.stack}`)
+    this.log.error(`[error][wss] ${error.stack}`)
   }
 
   private onConnection (socket: ws.WebSocket, { headers }: http.IncomingMessage & IConnectionExtraReq) {

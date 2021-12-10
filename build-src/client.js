@@ -17,5 +17,5 @@ build({
   external: [
     ...sharedOptions.external,
     'alt-client', 
-  ]
+  ],
 }).then(typesGenerator("client")) 

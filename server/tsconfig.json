@@ -5,7 +5,8 @@
       "../node_modules/@altv",
       "../node_modules/@types",
       "../node_modules/altv-xsync-entity-shared/dist/main",
-      "./types"
+      "./types",
+      "../types"
     ],
   },
   "include": [

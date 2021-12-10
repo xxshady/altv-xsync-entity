@@ -1,3 +1,6 @@
+import type * as alt from "alt-server"
+import type { Entity } from "../entity"
+
 export interface IWSSOptions {
   certPath?: string
   keyPath?: string
@@ -7,4 +10,8 @@ export interface IWSSOptions {
    * default is true
    */
   localhost?: boolean
+}
+
+export interface INetOwnerLogicOptions {
+  entityNetOwnerChange?: (entity: Entity, netOwner: alt.Player) => void
 }

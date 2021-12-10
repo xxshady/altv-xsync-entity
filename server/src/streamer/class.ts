@@ -154,10 +154,12 @@ export class Streamer {
   }
 
   constructor (
+    streamDelay: number,
+    useNetOwnerLogic: boolean,
     private readonly onEntitiesStreamIn: (player: alt.Player, entities: InternalEntity[]) => void,
     private readonly onEntitiesStreamOut: (player: alt.Player, entities: InternalEntity[]) => void,
     private readonly onEntityDestroy: (player: alt.Player, entityId: number) => void,
-    streamDelay = 100,
+    private readonly onEntityNetOwnerChange: (entity: InternalEntity, netOwner: alt.Player) => void,
   ) {
     this.setupWorkerEvents()
     this.setupPlayersUpdateInterval(streamDelay)

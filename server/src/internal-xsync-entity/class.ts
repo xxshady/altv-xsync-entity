@@ -14,7 +14,10 @@ import {
 import { Players } from "../players"
 import { createLogger } from "altv-xlogger"
 import type { InternalEntity } from "../internal-entity"
-import type { IWSSOptions } from "../xsync-entity/types"
+import type {
+  INetOwnerLogicOptions,
+  IWSSOptions,
+} from "../xsync-entity/types"
 
 export class InternalXSyncEntity {
   // TODO move in shared
@@ -41,9 +44,12 @@ export class InternalXSyncEntity {
     port: number
   }
 
+  private readonly netOwnerChangeHandler: INetOwnerLogicOptions["entityNetOwnerChange"]
+
   constructor (
     streamDelay: number,
     wss: Required<IWSSOptions>,
+    netOwnerLogic?: INetOwnerLogicOptions,
   ) {
     if (InternalXSyncEntity._instance) {
       throw new Error("InternalXSyncEntity already initialized")
@@ -75,11 +81,15 @@ export class InternalXSyncEntity {
     )
 
     this.streamer = new Streamer(
+      streamDelay,
+      !!netOwnerLogic,
       this.onEntitiesStreamIn.bind(this),
       this.onEntitiesStreamOut.bind(this),
       this.onEntityDestroy.bind(this),
-      streamDelay,
+      this.onEntityNetOwnerChange.bind(this),
     )
+
+    this.netOwnerChangeHandler = netOwnerLogic?.entityNetOwnerChange
 
     this.setupAltvEvents()
   }
@@ -167,6 +177,10 @@ export class InternalXSyncEntity {
 
   private onEntityDestroy (player: alt.Player, entityId: number) {
     this.emitWSPlayer(player, WSClientOnServerEvents.EntityDestroy, entityId)
+  }
+
+  private onEntityNetOwnerChange (entity: InternalEntity, netOwner: alt.Player) {
+    this.netOwnerChangeHandler?.(entity.publicInstance, netOwner)
   }
 
   private convertEntitiesToIds (entities: InternalEntity[]): number[] {

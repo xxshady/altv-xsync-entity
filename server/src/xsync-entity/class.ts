@@ -20,10 +20,13 @@ export class XSyncEntity {
       domainName = "",
       port = 7700,
       localhost = true,
+      useWss: _useWss,
     } = wss
 
-    if (!(certPath && keyPath && domainName) && !localhost) {
-      throw new Error("[XSyncEntity] failed to init: specify in wss options certPath & keyPath & domainName if localhost is false ")
+    const useWss = _useWss ?? !localhost
+
+    if (useWss && !(certPath && keyPath && domainName)) {
+      throw new Error("[XSyncEntity] failed to init: specify in wss options certPath & keyPath & domainName if useWss is true")
     }
 
     this.internal = new InternalXSyncEntity(
@@ -34,6 +37,7 @@ export class XSyncEntity {
         certPath,
         keyPath,
         domainName,
+        useWss,
       },
       netOwnerLogic,
     )

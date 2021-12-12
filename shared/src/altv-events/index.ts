@@ -3,5 +3,5 @@ export enum ClientOnServerEvents {
 }
 
 export interface IClientOnServerEvent {
-  [ClientOnServerEvents.AddPlayer]: (authCode: string, serverUrl: string, serverPort: number) => void
+  [ClientOnServerEvents.AddPlayer]: (authCode: string, serverUrl: string) => void
 }

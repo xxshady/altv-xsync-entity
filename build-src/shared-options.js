@@ -16,6 +16,9 @@ export const getSharedBuildOptions = (side, { argv }) => {
     target: 'esnext',
     logLevel: 'info',
     external: ['alt-shared'],
+    define: {
+      ___DEV_MODE: !!watch,
+    }
   } 
 }
 

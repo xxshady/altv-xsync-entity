@@ -10,6 +10,10 @@ export interface IWSSOptions {
    * default is true
    */
   localhost?: boolean
+  /**
+   * default is !localhost
+   */
+  useWss?: boolean
 }
 
 export interface INetOwnerLogicOptions {

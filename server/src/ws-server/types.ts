@@ -21,6 +21,6 @@ export interface IWebSocketServerOptions {
   events: Record<string, (player: alt.Player, ...args: unknown[]) => void>
   certPath: string
   keyPath: string
-  localhost?: boolean
+  useWss?: boolean
   socketClose: SocketCloseHandler
 }

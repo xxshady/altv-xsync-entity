@@ -39,10 +39,7 @@ export class InternalXSyncEntity {
   public readonly players = new Players()
 
   private readonly log = createLogger("InternalXSyncEntity")
-  private readonly wssServerAddress: {
-    url: string
-    port: number
-  }
+  private readonly wsServerUrl: string
 
   private readonly netOwnerChangeHandler: INetOwnerLogicOptions["entityNetOwnerChange"]
 
@@ -63,11 +60,10 @@ export class InternalXSyncEntity {
       domainName,
       port,
       localhost,
+      useWss,
     } = wss
 
-    this.wssServerAddress = localhost
-      ? { url: "localhost", port }
-      : { url: `wss://${domainName}:${port}`, port }
+    this.wsServerUrl = localhost ? `localhost:${port}` : `wss://${domainName}`
 
     this.wss = new WSServer(
       port,
@@ -75,7 +71,7 @@ export class InternalXSyncEntity {
         events: {},
         certPath,
         keyPath,
-        localhost,
+        useWss,
         socketClose: this.onWSSocketClose.bind(this),
       },
     )
@@ -131,8 +127,7 @@ export class InternalXSyncEntity {
         player,
         ClientOnServerEvents.AddPlayer,
         authCode,
-        this.wssServerAddress.url,
-        this.wssServerAddress.port,
+        this.wsServerUrl,
       )
 
       const start = +new Date()

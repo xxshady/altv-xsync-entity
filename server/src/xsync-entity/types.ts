@@ -17,5 +17,5 @@ export interface IWSSOptions {
 }
 
 export interface INetOwnerLogicOptions {
-  entityNetOwnerChange?: (entity: Entity, netOwner: alt.Player) => void
+  entityNetOwnerChange?: (entity: Entity, netOwner: alt.Player | null, oldNetOwner: alt.Player | null) => void
 }

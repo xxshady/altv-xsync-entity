@@ -19,12 +19,14 @@ import type {
   PlayerId,
   PlayersUpdateData,
 } from "./types"
-import { createLogger } from "altv-xlogger"
+import { createLogger, LogLevel } from "altv-xlogger"
 import type { Entity } from "../entity"
 
 export class Streamer {
   private readonly worker = new Worker()
-  private readonly log = createLogger("altv-xsync-entity:streamer")
+  private readonly log = createLogger("altv-xsync-entity:streamer", {
+    logLevel: ___DEV_MODE ? LogLevel.Info : LogLevel.Warn,
+  })
 
   private readonly currentPlayersUpdate: ICurrentPlayersUpdate = {
     pending: false,
@@ -139,8 +141,63 @@ export class Streamer {
       this.clearCurrentPlayersUpdate()
     },
 
-    [StreamerFromWorkerEvents.NetOwnerChangeEntities]: (netOwnersAndEntities) => {
+    [StreamerFromWorkerEvents.EntitiesNetOwnerChange]: (entityIdsNetOwnerChanges) => {
+      const players = InternalXSyncEntity.instance.players.dict
+      const entities = InternalEntity.all
+      const {
+        removedEntityIds,
+        removedPlayerIds,
+      } = this.currentPlayersUpdate
+      const netOwnerChanges: [InternalEntity, alt.Player | null, alt.Player | null][] = []
 
+      for (let i = 0; i < entityIdsNetOwnerChanges.length; i++) {
+        const [entityId, oldNetOwnerId, newNetOwnerId] = entityIdsNetOwnerChanges[i]
+
+        if (removedEntityIds[entityId]) {
+          continue
+        }
+
+        const entity = entities[entityId]
+
+        if (!entity) {
+          this.log.warn(`[netOwnerChange] non exist entity id: ${entityId}`)
+          continue
+        }
+
+        if (newNetOwnerId === null && oldNetOwnerId === null) {
+          netOwnerChanges.push([entity, null, null])
+          continue
+        }
+
+        let oldNetOwner: alt.Player | null
+
+        if (oldNetOwnerId === null) {
+          oldNetOwner = null
+        } else if (removedPlayerIds[oldNetOwnerId as unknown as string]) {
+          oldNetOwner = null
+        } else {
+          oldNetOwner = players[oldNetOwnerId] ?? null
+        }
+
+        if (newNetOwnerId === null) {
+          netOwnerChanges.push([entity, oldNetOwner, null])
+          continue
+        }
+
+        let newNetOwner: alt.Player
+
+        if (removedPlayerIds[newNetOwnerId as unknown as string]) {
+          this.log.warn(`[netOwnerChange] newNetOwner disconnected: ${newNetOwnerId}`)
+          netOwnerChanges.push([entity, oldNetOwner, null])
+          continue
+        } else {
+          newNetOwner = players[newNetOwnerId]
+        }
+
+        netOwnerChanges.push([entity, oldNetOwner, newNetOwner])
+      }
+
+      this.onEntityNetOwnerChange(netOwnerChanges)
     },
 
     [StreamerFromWorkerEvents.EntitiesCreated]: () => {
@@ -159,10 +216,12 @@ export class Streamer {
     private readonly onEntitiesStreamIn: (player: alt.Player, entities: InternalEntity[]) => void,
     private readonly onEntitiesStreamOut: (player: alt.Player, entities: InternalEntity[]) => void,
     private readonly onEntityDestroy: (player: alt.Player, entityId: number) => void,
-    private readonly onEntityNetOwnerChange: (entity: InternalEntity, netOwner: alt.Player) => void,
+    private readonly onEntityNetOwnerChange: (entityNetOwnerChanges: [entity: InternalEntity, oldNetOwner: alt.Player | null, newNetOwner: alt.Player | null][]) => void,
   ) {
     this.setupWorkerEvents()
     this.setupPlayersUpdateInterval(streamDelay)
+
+    if (useNetOwnerLogic) this.enableNetOwnerLogic()
   }
 
   public addPool ({ id, maxStreamedIn }: EntityPool): void {
@@ -248,6 +307,10 @@ export class Streamer {
 
   private setupPlayersUpdateInterval (streamDelay: number) {
     setInterval(this.playersUpdateProcess.bind(this), streamDelay)
+  }
+
+  private enableNetOwnerLogic () {
+    this.emitWorker(StreamerWorkerEvents.EnableNetOwnerLogic)
   }
 
   private playersUpdateProcess () {

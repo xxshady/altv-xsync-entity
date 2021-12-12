@@ -1,5 +1,5 @@
 import * as alt from "alt-client"
-import { createLogger } from "altv-xlogger"
+import { createLogger, LogLevel } from "altv-xlogger"
 import type {
   EventsType,
   EventsTypeAny,
@@ -11,7 +11,10 @@ import {
 } from "altv-xsync-entity-shared"
 
 export class WSClient<TEvents extends EventsTypeAny> {
-  private readonly log = createLogger("WSClient")
+  private readonly log = createLogger("WSClient", {
+    logLevel: ___DEV_MODE ? LogLevel.Info : LogLevel.Warn,
+  })
+
   private readonly player = alt.Player.local
   private readonly messageHandlers = new Set<((message: string) => void)>()
   private readonly eventsManager: MessageEventsManager
@@ -91,7 +94,7 @@ export class WSClient<TEvents extends EventsTypeAny> {
   }
 
   private onMessage (message: string) {
-    // this.log.log("[message]", message, message.constructor?.name, typeof message)
+    // this.log.log("[message]", message)
 
     for (const handler of this.messageHandlers) {
       handler(message)

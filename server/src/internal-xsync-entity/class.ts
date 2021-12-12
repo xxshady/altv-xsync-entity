@@ -5,6 +5,7 @@ import { Streamer } from "../streamer"
 import type {
   IWSClientOnServerEvent,
   WSEntityCreate,
+  WSEntityNetOwner,
 } from "altv-xsync-entity-shared"
 import {
   WSVectors,
@@ -174,8 +175,29 @@ export class InternalXSyncEntity {
     this.emitWSPlayer(player, WSClientOnServerEvents.EntityDestroy, entityId)
   }
 
-  private onEntityNetOwnerChange (entity: InternalEntity, netOwner: alt.Player) {
-    this.netOwnerChangeHandler?.(entity.publicInstance, netOwner)
+  private onEntityNetOwnerChange (entityNetOwnerChanges: [entity: InternalEntity, oldNetOwner: alt.Player | null, newNetOwner: alt.Player | null][]) {
+    const WSEntitiesData = new Map<alt.Player, WSEntityNetOwner[]>()
+
+    for (let i = 0; i < entityNetOwnerChanges.length; i++) {
+      const [entity, oldNetOwner, newNetOwner] = entityNetOwnerChanges[i]
+
+      if (oldNetOwner) {
+        const entities = WSEntitiesData.get(oldNetOwner) ?? []
+        entities.push([entity.id, 0])
+        WSEntitiesData.set(oldNetOwner, entities)
+      }
+      if (newNetOwner) {
+        const entities = WSEntitiesData.get(newNetOwner) ?? []
+        entities.push([entity.id, 1])
+        WSEntitiesData.set(newNetOwner, entities)
+      }
+
+      this.netOwnerChangeHandler?.(entity.publicInstance, newNetOwner, oldNetOwner)
+    }
+
+    for (const [player, data] of WSEntitiesData) {
+      this.emitWSPlayer(player, WSClientOnServerEvents.EntitiesNetOwnerChange, data)
+    }
   }
 
   private convertEntitiesToIds (entities: InternalEntity[]): number[] {

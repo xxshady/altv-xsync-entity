@@ -11,3 +11,5 @@ export type WSEntityCreate = [
   pos: WSVector3,
   data: EntityData,
 ]
+
+export type WSEntityNetOwner = [entityId: number, isClientNetOwner: 1 | 0]

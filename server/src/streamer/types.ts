@@ -15,6 +15,7 @@ export interface IStreamerWorkerCreateEntity {
 export interface IStreamerWorkerEntity extends IStreamerWorkerCreateEntity {
   netOwnerId: PlayerId | null
   streamPlayerIds: Set<PlayerId>
+  netOwnerDist: number
 }
 
 export interface IStreamerWorkerEntityPool {
@@ -32,6 +33,7 @@ export interface IStreamerWorkerUpdatePlayer {
 
 export interface IStreamerWorkerPlayer {
   streamedEntityIds: Set<number>
+  owneredEntityIds: Set<PlayerId>
   oldPos: alt.IVector2
   oldDimension: number
 }
@@ -66,3 +68,5 @@ export interface IEntityCreateQueue {
   sendPromise: { resolve: () => void } | null
   started: boolean
 }
+
+export type EntityIdsNetOwnerChanges = [entityId: number, oldPlayer: number | null, newPlayer: number | null][]

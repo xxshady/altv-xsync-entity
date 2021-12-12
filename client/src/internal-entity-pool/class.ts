@@ -12,16 +12,22 @@ export class InternalEntityPool<T extends EntityData = EntityData> {
 
   private static readonly log = createLogger("InternalEntityPool")
 
-  public static streamOutEntity (id: number): void {
-    const entity = this.entities[id]
+  public static streamOutEntity (entityOrId: number | Entity): void {
+    let entity: Entity
+
+    if (typeof entityOrId === "number") {
+      entity = this.entities[entityOrId]
+    } else {
+      entity = entityOrId
+    }
 
     if (!entity) {
-      this.log.error(`[streamOutEntity] unknown entity id: ${id}`)
+      this.log.error(`[streamOutEntity] unknown entity id: ${entityOrId}`)
       return
     }
 
     entity.streamOut()
-    delete (this.entities as EntitiesDict)[id]
+    delete (this.entities as EntitiesDict)[entity.id]
   }
 
   private readonly log: ILogger

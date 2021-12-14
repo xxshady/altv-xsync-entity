@@ -454,13 +454,25 @@ export class Streamer {
   }
 
   private sendCreateEntities (entities: InternalEntity[]) {
+    // send only what worker need
     const _entities: IStreamerWorkerCreateEntity[] = entities.map(
-      (entity) => ({
-        ...entity,
+      ({
+        id,
+        poolId,
+        pos,
+        dimension,
+        streamRange,
+        migrationRange,
+      }) => ({
+        id,
+        poolId,
         pos: {
-          x: entity.pos.x,
-          y: entity.pos.y,
+          x: pos.x,
+          y: pos.y,
         },
+        dimension,
+        streamRange,
+        migrationRange,
       }))
 
     this.emitWorker(

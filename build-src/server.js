@@ -24,6 +24,6 @@ build({
   ],
 
   plugins: [
-    exportWorkersPlugin()
+    exportWorkersPlugin({ define: sharedOptions.define })
   ]
 }).then(typesGenerator("server"))

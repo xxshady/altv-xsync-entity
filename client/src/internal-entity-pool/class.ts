@@ -2,18 +2,17 @@ import { createLogger } from "altv-xlogger"
 import type { ILogger } from "altv-xlogger/dist/types"
 import type { EntityData } from "altv-xsync-entity-shared"
 import type { Entity } from "../entity"
+import { InternalEntity } from "../internal-entity"
 import { InternalXSyncEntity } from "../internal-xsync-entity"
-import type { IEntityClass } from "./types"
-
-type EntitiesDict = Record<number, Entity>
+import type { EntitiesDict, IEntityClass } from "./types"
 
 export class InternalEntityPool<T extends EntityData = EntityData> {
   public static readonly entities: Readonly<EntitiesDict> = {}
 
   private static readonly log = createLogger("InternalEntityPool")
 
-  public static streamOutEntity (entityOrId: number | Entity): void {
-    let entity: Entity
+  public static streamOutEntity (entityOrId: number | InternalEntity): void {
+    let entity: InternalEntity
 
     if (typeof entityOrId === "number") {
       entity = this.entities[entityOrId]
@@ -42,7 +41,9 @@ export class InternalEntityPool<T extends EntityData = EntityData> {
   }
 
   public streamInEntity (entity: Entity): void {
-    (InternalEntityPool.entities as EntitiesDict)[entity.id] = entity
-    entity.streamIn(entity.pos, entity.data)
+    const internal = InternalEntity.getInternalByPublic(entity);
+
+    (InternalEntityPool.entities as EntitiesDict)[entity.id] = internal
+    internal.streamIn()
   }
 }

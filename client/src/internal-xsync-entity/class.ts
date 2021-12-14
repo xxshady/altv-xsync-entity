@@ -14,6 +14,7 @@ import { InternalEntityPool } from "../internal-entity-pool"
 import { getServerIp } from "../utils/get-server-ip"
 import type { INetOwnerLogicOptions } from "../xsync-entity/types"
 import type { Entity } from "../entity"
+import type { InternalEntity } from "../internal-entity"
 
 export class InternalXSyncEntity {
   // TODO move in shared
@@ -95,9 +96,11 @@ export class InternalXSyncEntity {
 
         const netOwnered = !!isLocalPlayerNetOwner
 
+        entity.netOwnered = netOwnered
+
         if (netOwnered) {
           this.netOwneredEntityIds.add(entityId)
-          this.netOwnerChangeHandler?.(entity, netOwnered)
+          this.netOwnerChangeHandler?.(entity.publicInstance, netOwnered)
         } else this.removeNetOwneredEntity(entity)
       }
     },
@@ -167,12 +170,8 @@ export class InternalXSyncEntity {
     }
   }
 
-  private removeNetOwneredEntity (entity: Entity) {
+  private removeNetOwneredEntity (entity: InternalEntity) {
     if (!this.netOwneredEntityIds.delete(entity.id)) return
-    this.netOwnerChangeHandler?.(entity, false)
-  }
-
-  private addNetOwneredEntity (entityId: number) {
-    this.netOwneredEntityIds.add(entityId)
+    this.netOwnerChangeHandler?.(entity.publicInstance, false)
   }
 }

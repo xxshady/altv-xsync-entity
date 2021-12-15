@@ -9,5 +9,11 @@
   "license": "MIT",
   "peerDependencies": {
     "@altv/types-shared": "1.x"
+  },
+  "type": "module",
+  "scripts": {
+    "watch": "node --es-module-specifier-resolution=node build.js -w",
+    "build": "node --es-module-specifier-resolution=node build.js",
+    "types": "dts-bundle-generator -o dist/main.d.ts --inline-declare-externals src/main.ts"
   }
 }

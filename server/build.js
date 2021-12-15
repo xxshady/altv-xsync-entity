@@ -3,10 +3,10 @@ import { build } from 'esbuild'
 import { 
   getSharedBuildOptions, 
   typesGenerator 
-} from './shared-options'
-import exportWorkersPlugin from './plugins/export-node-workers'
+} from '../build-src/shared-options'
+import exportWorkersPlugin from '../build-src/plugins/export-node-workers'
 
-const sharedOptions = getSharedBuildOptions("server", process)
+const sharedOptions = getSharedBuildOptions(process)
 
 build({
   ...sharedOptions,
@@ -14,8 +14,8 @@ build({
   format: 'esm',
   platform: 'node',
 
-  entryPoints: ['./server/src/main.js'],
-  outdir: './server/dist',
+  entryPoints: ['./src/main.js'],
+  outdir: './dist',
 
   external: [
     ...sharedOptions.external,
@@ -26,4 +26,4 @@ build({
   plugins: [
     exportWorkersPlugin({ define: sharedOptions.define })
   ]
-}).then(typesGenerator("server"))
+}).then(typesGenerator())

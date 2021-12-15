@@ -1,11 +1,11 @@
 import { exec } from "child_process"
 
-export const getSharedBuildOptions = (side, { argv }) => {
+export const getSharedBuildOptions = ({ argv }) => {
   const [,, watchArg] = argv
 
-  const watch = ((watchArg === '-w') 
+  const watch = ((watchArg === "-w") 
     ? { 
-      onRebuild: typesGenerator(side)
+      onRebuild: typesGenerator()
     }
     : false
   )
@@ -13,26 +13,24 @@ export const getSharedBuildOptions = (side, { argv }) => {
   return {
     watch,
     bundle: true,
-    target: 'esnext',
-    logLevel: 'info',
-    external: ['alt-shared'],
+    target: "esnext",
+    logLevel: "info",
+    external: ["alt-shared"],
     define: {
       ___DEV_MODE: !!watch,
     }
   } 
 }
 
-export const typesGenerator = (side) => 
+export const typesGenerator = () => 
   (error, result) => {
     if (error) return
     
-    console.log(`[generate-types:${side}]`)
-
     if (typesGenerator.child) {
       typesGenerator.child.kill()
     }
 
-    const child = exec(`yarn run types:${side}`)
+    const child = exec("yarn run types")
     typesGenerator.child = child
 
     child.stdout.pipe(process.stdout)
@@ -40,7 +38,7 @@ export const typesGenerator = (side) =>
 
     child.stdout.on("data", (chunk) => {
       chunk = chunk + ""
-      if (!chunk.startsWith('Done in')) return
+      if (!chunk.startsWith("Done in")) return
       child.kill()
     })
 

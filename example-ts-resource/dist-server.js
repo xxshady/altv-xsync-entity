@@ -9,8 +9,7 @@ var EntityPools = /* @__PURE__ */ ((EntityPools2) => {
 })(EntityPools || {});
 
 // server.ts
-new XSyncEntity(500, {
-  domainName: "xshady.xyz",
+new XSyncEntity(100, {
   port: 7700,
   localhost: true
 });

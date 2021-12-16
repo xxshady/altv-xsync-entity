@@ -81,15 +81,19 @@ class StreamerWorker {
       for (let i = 0; i < entities.length; i++) {
         const entity = entities[i]
 
-        this.entities[entity.id] = {
+        const newEntity = {
           ...entity,
           netOwnerId: null,
-          streamPlayerIds: new Set(),
+          streamPlayerIds: new Set<number>(),
           netOwnerDist: Infinity,
         }
+
+        this.entities[entity.id] = newEntity
+        this.copyEntityIntoArray(newEntity)
       }
 
-      this.updateEntitiesArray()
+      // TEST
+      // this.updateEntitiesArray()
       this.emit(StreamerFromWorkerEvents.EntitiesCreated)
     },
 
@@ -257,38 +261,41 @@ class StreamerWorker {
     this.entitiesArray = []
 
     for (const entityId in this.entities) {
-      /**
-       * copy the entity object here so as not to make a reference to the object
-       * (if we just passed a reference to the object from {@link StreamerWorker#entities},
-       * it would significantly degrade performance in the for loop
-       *
-       *  also i spent many hours to understand this shit
-       * )
-       */
-      const {
-        poolId,
-        id,
-        pos,
-        dimension,
-        migrationRange,
-        netOwnerId,
-        streamPlayerIds,
-        streamRange,
-      } = this.entities[entityId]
-
-      this.entitiesArray.push({
-        poolId,
-        id,
-        dimension,
-        streamRange,
-        migrationRange,
-        netOwnerId,
-        pos: { ...pos },
-        streamPlayerIds: new Set(streamPlayerIds),
-        dist: Infinity,
-        netOwnerDist: Infinity,
-      })
+      this.copyEntityIntoArray(this.entities[entityId])
     }
+  }
+
+  private copyEntityIntoArray ({
+    poolId,
+    id,
+    pos,
+    dimension,
+    migrationRange,
+    netOwnerId,
+    streamPlayerIds,
+    streamRange,
+  }: IStreamerWorkerEntity) {
+    /**
+     * copy the entity object here so as not to make a reference to the object
+     *
+     * if we just passed a reference to the object from {@link StreamerWorker#entities},
+     * it would significantly degrade performance in the for loop
+     * also i spent many hours to understand this shit
+     *
+    */
+
+    this.entitiesArray.push({
+      poolId,
+      id,
+      dimension,
+      streamRange,
+      migrationRange,
+      netOwnerId,
+      pos: { ...pos },
+      streamPlayerIds: new Set(streamPlayerIds),
+      dist: Infinity,
+      netOwnerDist: Infinity,
+    })
   }
 
   private streamEntitiesForPlayer (

@@ -5128,6 +5128,13 @@ write-pkg@^4.0.0:
     type-fest "^0.4.1"
     write-json-file "^3.2.0"
 
+ws-esm@^8.2.10:
+  version "8.2.10"
+  resolved "https://registry.yarnpkg.com/ws-esm/-/ws-esm-8.2.10.tgz#f302ea5e7a16a5034b1a7bb7e1a2290782cc32df"
+  integrity sha512-mGV3sPKlorIwNuxs+7R33UKBuQ1Jls/oFFiTjxZNPvx0tLkvg70do8P6WXdt99YQj21iRrLWS38n2U+XhKXutQ==
+  dependencies:
+    "@types/node" "*"
+
 xtend@~4.0.1:
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/xtend/-/xtend-4.0.2.tgz#bb72779f5fa465186b1f438f674fa347fdb5db54"

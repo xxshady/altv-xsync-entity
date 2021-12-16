@@ -107,8 +107,7 @@ module.exports = {
   },
   ignorePatterns: [
     '.eslintrc.cjs',
-    'build-src/**/*',
-    "build.js",
+    '*.js',
     'dist',
     '*.d.ts',
   ],

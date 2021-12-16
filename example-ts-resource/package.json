@@ -1,0 +1,18 @@
+{
+  "type": "module",
+  "dependencies": {
+    "@altv/types-client": "^1.9.7",
+    "@altv/types-natives": "^1.4.3",
+    "@altv/types-server": "^2.1.7",
+    "@altv/types-shared": "^1.1.2",
+    "altv-xsync-entity-client": "^0.0.4",
+    "altv-xsync-entity-server": "^0.0.4",
+    "concurrently": "^6.4.0",
+    "esbuild": "^0.14.5"
+  },
+  "scripts": {
+    "start-client": "esbuild ./client.ts --format=esm --bundle --watch --external:alt-* --external:natives --outfile=./dist-client.js",
+    "start-server": "esbuild ./server.ts --format=esm --bundle --watch --external:alt-* --external:altv-xsync-* --outfile=./dist-server.js",
+    "start": "concurrently npm:start-*"
+  }
+}

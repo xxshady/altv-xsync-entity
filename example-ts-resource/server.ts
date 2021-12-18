@@ -7,14 +7,13 @@ new XSyncEntity(
   // xsyncentity will create websocket ws:// (http) server 
   // that will use local machine ip for connecting on client (alt.WebSocketClient)
   // for e.g. your external ip is 9.9.9.9
-  // remote client will use "ws://9.9.9.97700" in alt.WebSocketClient
-  
+  // remote client will use "ws://9.9.9.9:7700" in alt.WebSocketClient
   {
     port: 7700,
     localhost: true,
   },
 
-  // for wss:// (https) server you will need to specify domain and ssl cerificate
+  // for wss:// (https) server you will need to specify domain and ssl certificate
   // {
   //   domainName: 'domain.name',
   //   port: 7700,

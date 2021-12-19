@@ -70,7 +70,6 @@ export class Streamer {
 
       for (const playerId in playersOutEntities) {
         try {
-          // TODO TEST
           if (removedPlayerIds[playerId]) continue
 
           const player = players[playerId]

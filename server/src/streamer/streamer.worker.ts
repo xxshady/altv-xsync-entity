@@ -16,6 +16,7 @@ import type {
   IStreamerWorkerEntityPool,
   StreamerWorkerPlayersEntities,
   EntityIdsNetOwnerChanges,
+  EntityIdsNetOwnerChangesDict,
 } from "./types"
 import { dist2dWithRange } from "../utils/dist-2d-range"
 
@@ -106,7 +107,7 @@ class StreamerWorker {
       const entitiesSize = this.entitiesArray.length
       const playersInEntityIds: StreamerWorkerPlayersEntities = {}
       const playersOutEntityIds: StreamerWorkerPlayersEntities = {}
-      const entityIdsNetOwnerChanges: EntityIdsNetOwnerChanges = []
+      const entityIdsNetOwnerChanges: EntityIdsNetOwnerChangesDict = {}
 
       this.entitiesSizeBigger = entitiesSize > this.oldEntitiesSize
       this.oldEntitiesSize = entitiesSize
@@ -151,11 +152,12 @@ class StreamerWorker {
           oldDimension: Infinity,
         } as const
 
-        if (!this.players[playerId]) {
-          this.log.log(`added player: ${playerId}`)
-        }
+        let player = this.players[playerId]
 
-        const player = this.players[playerId] ?? PLAYER_DEFAULTS
+        if (!player) {
+          this.log.log(`added player: ${playerId}`)
+          player = PLAYER_DEFAULTS
+        }
 
         const {
           streamIn,
@@ -197,7 +199,12 @@ class StreamerWorker {
       if (this.netOwnerLogicEnabled && Object.keys(entityIdsNetOwnerChanges).length) {
         this.emit(
           StreamerFromWorkerEvents.EntitiesNetOwnerChange,
-          entityIdsNetOwnerChanges,
+
+          // TODO clean this shit
+          Object.entries(entityIdsNetOwnerChanges)
+            .map(([entityId, netOwners]) =>
+              [+entityId, ...netOwners],
+            ) as EntityIdsNetOwnerChanges,
         )
       }
     },
@@ -321,7 +328,7 @@ class StreamerWorker {
     oldDimension: number,
     streamedEntityIds: Set<number>,
     owneredEntityIds: Set<number>,
-    netOwnerChanges: EntityIdsNetOwnerChanges,
+    netOwnerChanges: EntityIdsNetOwnerChangesDict,
   ): {
       streamIn: number[]
       streamOut: number[]
@@ -331,26 +338,28 @@ class StreamerWorker {
 
     const entities = this.entitiesArray
 
-    // TODO TEST 2 players
-    if (!this.entitiesSizeBigger && oldDimension === dimension && oldPos.x === pos.x && oldPos.y === pos.y) {
-      // this.log.log("old pos & dimension && entities size, skip distance checks")
+    // TODO fix it for netowners
+    if (!this.netOwnerLogicEnabled) {
+      if (!this.entitiesSizeBigger && oldDimension === dimension && oldPos.x === pos.x && oldPos.y === pos.y) {
+        // this.log.log("old pos & dimension && entities size, skip distance checks")
 
-      for (let i = 0; i < entities.length; i++) {
-        const entity = entities[i]
+        for (let i = 0; i < entities.length; i++) {
+          const entity = entities[i]
 
-        if (dimension === entity.dimension) continue
+          if (dimension === entity.dimension) continue
 
-        this.streamOutEntityPlayer(
-          playerId, entity, streamedEntityIds, streamOutIds,
-          netOwnerChanges, owneredEntityIds,
-        )
+          this.streamOutEntityPlayer(
+            playerId, entity, streamedEntityIds, streamOutIds,
+            netOwnerChanges, owneredEntityIds,
+          )
 
-        entity.dist = Infinity
-      }
+          entity.dist = Infinity
+        }
 
-      return {
-        streamIn: streamInIds,
-        streamOut: streamOutIds,
+        return {
+          streamIn: streamInIds,
+          streamOut: streamOutIds,
+        }
       }
     }
 
@@ -383,7 +392,6 @@ class StreamerWorker {
     }
     for (let i = 0; i < sortedEntities.length; i++) {
       const arrEntity = sortedEntities[lastIdx]
-      // TEST
       const {
         id,
         dist,
@@ -391,16 +399,16 @@ class StreamerWorker {
         streamRange,
         migrationRange,
         netOwnerId,
+        netOwnerDist,
       } = arrEntity
 
       if (this.netOwnerLogicEnabled) {
-        // TEST
         if (netOwnerId === playerId) {
           const origEntity = this.entities[id]
 
-          if (dist > migrationRange && origEntity.streamPlayerIds.size <= 1) {
+          if (dist > migrationRange) {
             owneredEntityIds.delete(id)
-            netOwnerChanges.push([id, playerId, null])
+            netOwnerChanges[id] = [playerId, null]
             origEntity.netOwnerId = null
             origEntity.netOwnerDist = Infinity
             arrEntity.netOwnerId = null
@@ -421,6 +429,47 @@ class StreamerWorker {
         continue
       }
 
+      if (this.netOwnerLogicEnabled) {
+        if (netOwnerId !== playerId && dist < migrationRange && netOwnerDist > migrationRange) {
+          if (owneredEntityIds.has(id)) {
+            this.log.error(`player: ${playerId} already net owner of entity: ${id}`)
+          } else {
+            // this.log.log(`set net owner entity: ${entity.id} player: ${playerId}`)
+            const entity = this.entities[id]
+
+            owneredEntityIds.add(id)
+
+            let netOwnerChange = netOwnerChanges[id]
+
+            if (netOwnerChange) {
+              this.log.log(`netOwnerChange null to oldNetOwner entity: ${id} newNetOwner: ${playerId}`)
+
+              // it is assumed netOwnerChange here is:
+              // [oldNetOwnerId: number, newNetOwnerId: null]
+              // and we change newNetOwnerId to our current playerId
+
+              if (netOwnerChange[0] == null) {
+                this.log.error(`oldNetOwner is null netOwnerChange null to oldNetOwner entity: ${id} newNetOwner: ${playerId}`)
+              } else {
+                netOwnerChange[1] = playerId
+              }
+            } else {
+              netOwnerChange = [netOwnerId, playerId]
+            }
+            netOwnerChanges[id] = netOwnerChange
+
+            if (netOwnerId != null) {
+              this.players[netOwnerId]?.owneredEntityIds.delete(id)
+            }
+
+            entity.netOwnerId = playerId
+            entity.netOwnerDist = dist
+            arrEntity.netOwnerId = playerId
+            arrEntity.netOwnerDist = dist
+          }
+        }
+      }
+
       const poolStreamIn = poolsStreamIn[poolId] + 1
 
       if (poolStreamIn > this.pools[poolId].maxStreamedIn) {
@@ -433,7 +482,6 @@ class StreamerWorker {
 
       this.streamInEntityPlayer(
         playerId, arrEntity, streamedEntityIds, streamInIds,
-        netOwnerChanges, owneredEntityIds, dist,
       )
     }
 
@@ -459,7 +507,7 @@ class StreamerWorker {
     arrEntity: IStreamerWorkerArrEntity,
     streamedEntityIds: Set<number>,
     streamOutIds: number[],
-    netOwnerChanges: EntityIdsNetOwnerChanges,
+    netOwnerChanges: EntityIdsNetOwnerChangesDict,
     owneredEntityIds: Set<number>,
   ) {
     const entityId = arrEntity.id
@@ -474,11 +522,10 @@ class StreamerWorker {
 
     if (this.netOwnerLogicEnabled) {
       if (entity.netOwnerId === playerId) {
-        // TODO TEST AND REMOVE
         if (!owneredEntityIds.delete(entityId)) {
           this.log.error(`player: ${playerId} already NOT net owner of entity: ${entityId}`)
         } else {
-          netOwnerChanges.push([entityId, playerId, null])
+          netOwnerChanges[entityId] = [playerId, null]
           entity.netOwnerId = null
           entity.netOwnerDist = Infinity
           arrEntity.netOwnerId = null
@@ -493,30 +540,9 @@ class StreamerWorker {
     arrEntity: IStreamerWorkerArrEntity,
     streamedEntityIds: Set<number>,
     streamInIds: number[],
-    netOwnerChanges: EntityIdsNetOwnerChanges,
-    owneredEntityIds: Set<number>,
-    dist: number,
   ) {
     const entityId = arrEntity.id
     const entity = this.entities[entityId]
-
-    if (this.netOwnerLogicEnabled) {
-      if (dist < entity.migrationRange && entity.netOwnerDist > entity.migrationRange) {
-        // TODO TEST
-        if (owneredEntityIds.has(entityId)) {
-          this.log.error(`player: ${playerId} already net owner of entity: ${entityId}`)
-        } else {
-          // this.log.log(`set net owner entity: ${entity.id} player: ${playerId}`)
-          owneredEntityIds.add(entityId)
-          netOwnerChanges.push([entityId, entity.netOwnerId, playerId])
-          entity.netOwnerId = playerId
-          entity.netOwnerDist = dist
-          arrEntity.netOwnerId = playerId
-          arrEntity.netOwnerDist = dist
-        }
-      }
-    }
-
     if (streamedEntityIds.has(entityId)) return
 
     streamedEntityIds.add(entityId)

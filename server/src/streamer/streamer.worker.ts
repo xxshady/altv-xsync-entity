@@ -97,7 +97,7 @@ class StreamerWorker {
     },
 
     [StreamerWorkerEvents.PlayersUpdate]: (playersData, removedPlayerIds) => {
-      // this.log.log("[PlayersUpdate] entities:", this.entities)
+      // this.log.log("[PlayersUpdate] entities:", Object.values(this.entities).filter(e => e.streamPlayerIds.size > 0))
       // this.log.log("[PlayersUpdate] playersData:", playersData, "removed players:", removedPlayerIds)
 
       // const label = `entities: ${this.entitiesArray.length}`
@@ -112,9 +112,9 @@ class StreamerWorker {
       this.oldEntitiesSize = entitiesSize
 
       for (let i = 0; i < removedPlayerIds.length; i++) {
-        const id = removedPlayerIds[i]
+        const playerId = +removedPlayerIds[i]
 
-        const removedPlayer = this.players[id as unknown as number]
+        const removedPlayer = this.players[playerId]
         if (!removedPlayer) continue
 
         for (const entityId of removedPlayer.owneredEntityIds) {
@@ -131,7 +131,14 @@ class StreamerWorker {
           arrEntity.netOwnerDist = Infinity
         }
 
-        delete this.players[id as unknown as number]
+        for (const entityId of removedPlayer.streamedEntityIds) {
+          const entity = this.entities[entityId]
+          if (!entity) continue
+
+          entity.streamPlayerIds.delete(playerId)
+        }
+
+        delete this.players[playerId]
       }
 
       for (let i = 0; i < playersData.length; i++) {

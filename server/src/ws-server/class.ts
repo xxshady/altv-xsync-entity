@@ -116,7 +116,7 @@ export class WSServer {
       authCode,
     })
 
-    this.log.log("[addPlayer]", `player id: ${player.id}`, "auth code:", authCode)
+    // this.log.log("[addPlayer]", `player id: ${player.id}`, "auth code:", authCode)
 
     return authCode
   }
@@ -186,7 +186,7 @@ export class WSServer {
       authcode: authCode,
     } = headers
 
-    this.log.log("[upgrade] headers:", "playerId:", playerId, "authCode:", authCode)
+    // this.log.log("[upgrade] headers:", "playerId:", playerId, "authCode:", authCode)
 
     if (!(
       playerId &&

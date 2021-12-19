@@ -91,7 +91,8 @@ export class Streamer {
               const entity = entities[entityId]
 
               if (!entity) {
-                throw new Error(`[xsync-entity:streamer] non exist entity id: ${entityId}`)
+                this.log.warn(`[StreamChangePlayerEntities] streamOut non exist entity id: ${entityId}`)
+                continue
               }
 
               this.removeStreamEntityPlayerLink(+playerId, entityId)
@@ -125,7 +126,8 @@ export class Streamer {
             const entity = entities[entityId]
 
             if (!entity) {
-              throw new Error(`[xsync-entity:streamer] non exist entity id: ${entityId}`)
+              this.log.warn(`[StreamChangePlayerEntities] streamIn non exist entity id: ${entityId}`)
+              continue
             }
 
             this.addStreamEntityPlayerLink(+playerId, entityId)
@@ -242,9 +244,14 @@ export class Streamer {
   }
 
   public removeEntity ({ id }: InternalEntity): void {
+    this.emitWorker(StreamerWorkerEvents.DestroyEntity, id)
+
     this.currentPlayersUpdate.removedEntityIds[id] = true
 
-    this.emitWorker(StreamerWorkerEvents.DestroyEntity, id)
+    const { entities } = this.entityCreateQueue
+    const entityIdx = entities.findIndex((e) => e.id === id)
+
+    if (entityIdx !== -1) entities.splice(entityIdx, 1)
 
     const playerIds = this.deleteEntityStreamedPlayerIds(id)
 
@@ -344,11 +351,10 @@ export class Streamer {
         ]
       }
 
-      playersData.push(...Object.keys(removedPlayerIds))
-
       this.emitWorker(
         StreamerWorkerEvents.PlayersUpdate,
         playersData,
+        Object.keys(removedPlayerIds),
       )
       this.startCurrentPlayersUpdate()
     } catch (e) {

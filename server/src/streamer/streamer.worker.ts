@@ -11,7 +11,7 @@ import type {
 } from "./events"
 import type {
   IStreamerWorkerPlayer,
-  IStreamerWorkerDistEntity,
+  IStreamerWorkerArrEntity,
   IStreamerWorkerEntity,
   IStreamerWorkerEntityPool,
   StreamerWorkerPlayersEntities,
@@ -61,7 +61,7 @@ class StreamerWorker {
   /**
    * array for faster iteration through it in for loop
    */
-  private entitiesArray: IStreamerWorkerDistEntity[] = []
+  private entitiesArray: IStreamerWorkerArrEntity[] = []
   private oldEntitiesSize = 0
   private entitiesSizeBigger = false
   private netOwnerLogicEnabled = false
@@ -86,23 +86,22 @@ class StreamerWorker {
           netOwnerId: null,
           streamPlayerIds: new Set<number>(),
           netOwnerDist: Infinity,
+          arrayIndex: -1,
         }
 
         this.entities[entity.id] = newEntity
         this.copyEntityIntoArray(newEntity)
       }
 
-      // TEST
-      // this.updateEntitiesArray()
       this.emit(StreamerFromWorkerEvents.EntitiesCreated)
     },
 
-    [StreamerWorkerEvents.PlayersUpdate]: (playersData) => {
-      // TEST
+    [StreamerWorkerEvents.PlayersUpdate]: (playersData, removedPlayerIds) => {
       // this.log.log("[PlayersUpdate] entities:", this.entities)
-      // this.log.log("[PlayersUpdate] players:", this.players)
-      const label = `entities: ${this.entitiesArray.length}`
-      this.log.time(label)
+      // this.log.log("[PlayersUpdate] playersData:", playersData, "removed players:", removedPlayerIds)
+
+      // const label = `entities: ${this.entitiesArray.length}`
+      // this.log.time(label)
 
       const entitiesSize = this.entitiesArray.length
       const playersInEntityIds: StreamerWorkerPlayersEntities = {}
@@ -112,28 +111,31 @@ class StreamerWorker {
       this.entitiesSizeBigger = entitiesSize > this.oldEntitiesSize
       this.oldEntitiesSize = entitiesSize
 
-      for (let i = 0; i < playersData.length; i++) {
-        const playerDataOrId = playersData[i]
+      for (let i = 0; i < removedPlayerIds.length; i++) {
+        const id = removedPlayerIds[i]
 
-        // removed player id
-        if (typeof playerDataOrId === "string") {
-          const { owneredEntityIds } = this.players[playerDataOrId as unknown as number]
+        const removedPlayer = this.players[id as unknown as number]
+        if (!removedPlayer) continue
 
-          for (const entityId of owneredEntityIds) {
-            const entity = this.entities[entityId]
+        for (const entityId of removedPlayer.owneredEntityIds) {
+          const entity = this.entities[entityId]
+          if (!entity) continue
 
-            if (!entity) continue
+          entity.netOwnerId = null
+          entity.netOwnerDist = Infinity
 
-            entity.netOwnerId = null
-            entity.netOwnerDist = Infinity
-          }
+          const arrEntity = this.entitiesArray[entity.arrayIndex]
+          if (!arrEntity) continue
 
-          delete this.players[playerDataOrId as unknown as number]
-
-          continue
+          arrEntity.netOwnerId = null
+          arrEntity.netOwnerDist = Infinity
         }
 
-        const [playerId, { pos2d, dimension }] = playerDataOrId
+        delete this.players[id as unknown as number]
+      }
+
+      for (let i = 0; i < playersData.length; i++) {
+        const [playerId, { pos2d, dimension }] = playersData[i]
 
         const PLAYER_DEFAULTS: IStreamerWorkerPlayer = {
           streamedEntityIds: new Set(),
@@ -141,6 +143,10 @@ class StreamerWorker {
           oldPos: { x: Infinity, y: Infinity },
           oldDimension: Infinity,
         } as const
+
+        if (!this.players[playerId]) {
+          this.log.log(`added player: ${playerId}`)
+        }
 
         const player = this.players[playerId] ?? PLAYER_DEFAULTS
 
@@ -173,7 +179,7 @@ class StreamerWorker {
         this.players[playerId] = player
       }
 
-      this.log.timeEnd(label)
+      // this.log.timeEnd(label)
 
       this.emit(
         StreamerFromWorkerEvents.StreamChangePlayerEntities,
@@ -191,11 +197,7 @@ class StreamerWorker {
 
     [StreamerWorkerEvents.DestroyEntity]: (entityId) => {
       const entity = this.entities[entityId]
-
-      if (!entity) {
-        this.log.error(`[DestroyEntity] unknown removed entity id: ${entityId}`)
-        return
-      }
+      if (!entity) return
 
       for (const playerId of entity.streamPlayerIds) {
         this.players[playerId]?.streamedEntityIds.delete(entityId)
@@ -252,7 +254,7 @@ class StreamerWorker {
 
         // fuck typescript complaints, i know what im doing
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        handler(...data as [firstArg: any])
+        handler(...data as [firstArg: any, secondArg?: any])
       },
     )
   }
@@ -265,16 +267,7 @@ class StreamerWorker {
     }
   }
 
-  private copyEntityIntoArray ({
-    poolId,
-    id,
-    pos,
-    dimension,
-    migrationRange,
-    netOwnerId,
-    streamPlayerIds,
-    streamRange,
-  }: IStreamerWorkerEntity) {
+  private copyEntityIntoArray (entity: IStreamerWorkerEntity) {
     /**
      * copy the entity object here so as not to make a reference to the object
      *
@@ -283,6 +276,20 @@ class StreamerWorker {
      * also i spent many hours to understand this shit
      *
     */
+
+    const arrayIndex = this.entitiesArray.length
+    const {
+      poolId,
+      id,
+      pos,
+      dimension,
+      migrationRange,
+      netOwnerId,
+      streamPlayerIds,
+      streamRange,
+    } = entity
+
+    entity.arrayIndex = arrayIndex
 
     this.entitiesArray.push({
       poolId,
@@ -295,6 +302,7 @@ class StreamerWorker {
       streamPlayerIds: new Set(streamPlayerIds),
       dist: Infinity,
       netOwnerDist: Infinity,
+      arrayIndex,
     })
   }
 
@@ -366,9 +374,8 @@ class StreamerWorker {
     for (const poolId in this.pools) {
       poolsStreamIn[poolId] = 0
     }
-    this.log.time("netowners")
     for (let i = 0; i < sortedEntities.length; i++) {
-      const entity = sortedEntities[lastIdx]
+      const arrEntity = sortedEntities[lastIdx]
       // TEST
       const {
         id,
@@ -377,7 +384,7 @@ class StreamerWorker {
         streamRange,
         migrationRange,
         netOwnerId,
-      } = entity
+      } = arrEntity
 
       if (this.netOwnerLogicEnabled) {
         // TEST
@@ -389,8 +396,11 @@ class StreamerWorker {
             netOwnerChanges.push([id, playerId, null])
             origEntity.netOwnerId = null
             origEntity.netOwnerDist = Infinity
+            arrEntity.netOwnerId = null
+            arrEntity.netOwnerDist = Infinity
           } else {
             origEntity.netOwnerDist = dist
+            arrEntity.netOwnerDist = dist
           }
         }
       }
@@ -398,7 +408,7 @@ class StreamerWorker {
       if (dist > streamRange) {
         lastIdx++
         this.streamOutEntityPlayer(
-          playerId, entity, streamedEntityIds, streamOutIds,
+          playerId, arrEntity, streamedEntityIds, streamOutIds,
           netOwnerChanges, owneredEntityIds,
         )
         continue
@@ -415,7 +425,7 @@ class StreamerWorker {
       poolsStreamIn[poolId] = poolStreamIn
 
       this.streamInEntityPlayer(
-        playerId, entity, streamedEntityIds, streamInIds,
+        playerId, arrEntity, streamedEntityIds, streamInIds,
         netOwnerChanges, owneredEntityIds, dist,
       )
     }
@@ -427,27 +437,25 @@ class StreamerWorker {
       )
     }
 
-    this.log.timeEnd("netowners")
-
     return {
       streamIn: streamInIds,
       streamOut: streamOutIds,
     }
   }
 
-  private sortEntityDists (a: IStreamerWorkerDistEntity, b: IStreamerWorkerDistEntity) {
+  private sortEntityDists (a: IStreamerWorkerArrEntity, b: IStreamerWorkerArrEntity) {
     return a.dist - b.dist
   }
 
   private streamOutEntityPlayer (
     playerId: number,
-    distEntity: IStreamerWorkerDistEntity,
+    arrEntity: IStreamerWorkerArrEntity,
     streamedEntityIds: Set<number>,
     streamOutIds: number[],
     netOwnerChanges: EntityIdsNetOwnerChanges,
     owneredEntityIds: Set<number>,
   ) {
-    const entityId = distEntity.id
+    const entityId = arrEntity.id
 
     if (!streamedEntityIds.delete(entityId)) return
 
@@ -466,8 +474,8 @@ class StreamerWorker {
           netOwnerChanges.push([entityId, playerId, null])
           entity.netOwnerId = null
           entity.netOwnerDist = Infinity
-          distEntity.netOwnerId = null
-          distEntity.netOwnerDist = Infinity
+          arrEntity.netOwnerId = null
+          arrEntity.netOwnerDist = Infinity
         }
       }
     }
@@ -475,14 +483,14 @@ class StreamerWorker {
 
   private streamInEntityPlayer (
     playerId: number,
-    distEntity: IStreamerWorkerDistEntity,
+    arrEntity: IStreamerWorkerArrEntity,
     streamedEntityIds: Set<number>,
     streamInIds: number[],
     netOwnerChanges: EntityIdsNetOwnerChanges,
     owneredEntityIds: Set<number>,
     dist: number,
   ) {
-    const entityId = distEntity.id
+    const entityId = arrEntity.id
     const entity = this.entities[entityId]
 
     if (this.netOwnerLogicEnabled) {
@@ -491,12 +499,13 @@ class StreamerWorker {
         if (owneredEntityIds.has(entityId)) {
           this.log.error(`player: ${playerId} already net owner of entity: ${entityId}`)
         } else {
+          // this.log.log(`set net owner entity: ${entity.id} player: ${playerId}`)
           owneredEntityIds.add(entityId)
           netOwnerChanges.push([entityId, entity.netOwnerId, playerId])
           entity.netOwnerId = playerId
           entity.netOwnerDist = dist
-          distEntity.netOwnerId = playerId
-          distEntity.netOwnerDist = dist
+          arrEntity.netOwnerId = playerId
+          arrEntity.netOwnerDist = dist
         }
       }
     }

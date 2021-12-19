@@ -122,6 +122,8 @@ export class InternalXSyncEntity {
 
   private async addPlayer (player: alt.Player) {
     try {
+      this.log.log(`~gl~addPlayer:~w~ ${player.valid ? player.id : "unknown id"}`)
+
       const authCode = this.wss.addPlayer(player)
 
       alt.emitClient(
@@ -144,6 +146,8 @@ export class InternalXSyncEntity {
   }
 
   private removePlayer (player: alt.Player) {
+    this.log.log(`~yl~removePlayer:~w~ ${player.valid ? player.id : "unknown id"}`)
+
     if (!this.players.has(player)) return
 
     this.players.remove(player)

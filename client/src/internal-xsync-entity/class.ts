@@ -12,6 +12,9 @@ import { WSClient } from "../ws-client"
 import { createLogger, LogLevel } from "altv-xlogger"
 import { InternalEntityPool } from "../internal-entity-pool"
 import { getServerIp } from "../utils/get-server-ip"
+import type { INetOwnerLogicOptions } from "../xsync-entity/types"
+import type { Entity } from "../entity"
+import type { InternalEntity } from "../internal-entity"
 
 export class InternalXSyncEntity {
   // TODO move in shared
@@ -32,6 +35,8 @@ export class InternalXSyncEntity {
   })
 
   private readonly entityPools: Record<InternalEntityPool["id"], InternalEntityPool> = {}
+  private readonly netOwnerChangeHandler?: INetOwnerLogicOptions["entityNetOwnerChange"]
+  private readonly netOwneredEntityIds = new Set<number>()
 
   private readonly WSEventHandlers: IWSClientOnServerEvent = {
     [WSClientOnServerEvents.EntitiesStreamIn]: (entities) => {
@@ -60,23 +65,57 @@ export class InternalXSyncEntity {
       this.log.log(`stream out: ${entityIds.length}`)
 
       for (let i = 0; i < entityIds.length; i++) {
+        const entity = InternalEntityPool.entities[entityIds[i]]
+
+        if (!entity) continue
+
+        this.removeNetOwneredEntity(entity)
         InternalEntityPool.streamOutEntity(entityIds[i])
       }
     },
 
     [WSClientOnServerEvents.EntityDestroy]: (entityId) => {
+      const entity = InternalEntityPool.entities[entityId]
+
+      if (!entity) return
+
+      this.removeNetOwneredEntity(entity)
       InternalEntityPool.streamOutEntity(entityId)
+    },
+
+    [WSClientOnServerEvents.EntitiesNetOwnerChange]: (entities) => {
+      const { netOwnerChangeHandler } = this
+
+      if (!netOwnerChangeHandler) return
+
+      for (let i = 0; i < entities.length; i++) {
+        const [entityId, isLocalPlayerNetOwner] = entities[i]
+        const entity = InternalEntityPool.entities[entityId]
+
+        if (!entity) continue
+
+        const netOwnered = !!isLocalPlayerNetOwner
+
+        entity.netOwnered = netOwnered
+
+        if (netOwnered) {
+          this.netOwneredEntityIds.add(entityId)
+          this.netOwnerChangeHandler?.(entity.publicInstance, netOwnered)
+        } else this.removeNetOwneredEntity(entity)
+      }
     },
   }
 
   private ws: WSClient<IWSClientOnServerEvent> | null = null
 
-  constructor () {
+  constructor (netOwnerLogic?: INetOwnerLogicOptions) {
     if (InternalXSyncEntity._instance) {
       throw new Error("InternalXSyncEntity already initialized")
     }
 
     InternalXSyncEntity._instance = this
+
+    this.netOwnerChangeHandler = netOwnerLogic?.entityNetOwnerChange
 
     this.setupAltvEvents()
   }
@@ -96,7 +135,7 @@ export class InternalXSyncEntity {
     )
   }
 
-  private onAddPlayer (authCode: string, serverUrl: string, serverPort: number) {
+  private onAddPlayer (authCode: string, serverUrl: string) {
     let fullServerUrl: string
 
     if (serverUrl.startsWith("localhost")) {
@@ -129,5 +168,10 @@ export class InternalXSyncEntity {
         this.log.error(e)
       }
     }
+  }
+
+  private removeNetOwneredEntity (entity: InternalEntity) {
+    if (!this.netOwneredEntityIds.delete(entity.id)) return
+    this.netOwnerChangeHandler?.(entity.publicInstance, false)
   }
 }

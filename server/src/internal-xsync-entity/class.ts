@@ -5,6 +5,7 @@ import { Streamer } from "../streamer"
 import type {
   IWSClientOnServerEvent,
   WSEntityCreate,
+  WSEntityNetOwner,
 } from "altv-xsync-entity-shared"
 import {
   WSVectors,
@@ -14,7 +15,10 @@ import {
 import { Players } from "../players"
 import { createLogger } from "altv-xlogger"
 import type { InternalEntity } from "../internal-entity"
-import type { IWSSOptions } from "../xsync-entity/types"
+import type {
+  INetOwnerLogicOptions,
+  IWSSOptions,
+} from "../xsync-entity/types"
 
 export class InternalXSyncEntity {
   // TODO move in shared
@@ -38,9 +42,12 @@ export class InternalXSyncEntity {
   private readonly log = createLogger("InternalXSyncEntity")
   private readonly wsServerUrl: string
 
+  private readonly netOwnerChangeHandler: INetOwnerLogicOptions["entityNetOwnerChange"]
+
   constructor (
     streamDelay: number,
     wss: Required<IWSSOptions>,
+    netOwnerLogic?: INetOwnerLogicOptions,
   ) {
     if (InternalXSyncEntity._instance) {
       throw new Error("InternalXSyncEntity already initialized")
@@ -71,11 +78,15 @@ export class InternalXSyncEntity {
     )
 
     this.streamer = new Streamer(
+      streamDelay,
+      !!netOwnerLogic,
       this.onEntitiesStreamIn.bind(this),
       this.onEntitiesStreamOut.bind(this),
       this.onEntityDestroy.bind(this),
-      streamDelay,
+      this.onEntityNetOwnerChange.bind(this),
     )
+
+    this.netOwnerChangeHandler = netOwnerLogic?.entityNetOwnerChange
 
     this.setupAltvEvents()
   }
@@ -111,6 +122,8 @@ export class InternalXSyncEntity {
 
   private async addPlayer (player: alt.Player) {
     try {
+      this.log.log(`~gl~addPlayer:~w~ ${player.valid ? player.id : "unknown id"}`)
+
       const authCode = this.wss.addPlayer(player)
 
       alt.emitClient(
@@ -133,6 +146,8 @@ export class InternalXSyncEntity {
   }
 
   private removePlayer (player: alt.Player) {
+    this.log.log(`~yl~removePlayer:~w~ ${player.valid ? player.id : "unknown id"}`)
+
     if (!this.players.has(player)) return
 
     this.players.remove(player)
@@ -162,6 +177,31 @@ export class InternalXSyncEntity {
 
   private onEntityDestroy (player: alt.Player, entityId: number) {
     this.emitWSPlayer(player, WSClientOnServerEvents.EntityDestroy, entityId)
+  }
+
+  private onEntityNetOwnerChange (entityNetOwnerChanges: [entity: InternalEntity, oldNetOwner: alt.Player | null, newNetOwner: alt.Player | null][]) {
+    const WSEntitiesData = new Map<alt.Player, WSEntityNetOwner[]>()
+
+    for (let i = 0; i < entityNetOwnerChanges.length; i++) {
+      const [entity, oldNetOwner, newNetOwner] = entityNetOwnerChanges[i]
+
+      if (oldNetOwner) {
+        const entities = WSEntitiesData.get(oldNetOwner) ?? []
+        entities.push([entity.id, 0])
+        WSEntitiesData.set(oldNetOwner, entities)
+      }
+      if (newNetOwner) {
+        const entities = WSEntitiesData.get(newNetOwner) ?? []
+        entities.push([entity.id, 1])
+        WSEntitiesData.set(newNetOwner, entities)
+      }
+
+      this.netOwnerChangeHandler?.(entity.publicInstance, newNetOwner, oldNetOwner)
+    }
+
+    for (const [player, data] of WSEntitiesData) {
+      this.emitWSPlayer(player, WSClientOnServerEvents.EntitiesNetOwnerChange, data)
+    }
   }
 
   private convertEntitiesToIds (entities: InternalEntity[]): number[] {

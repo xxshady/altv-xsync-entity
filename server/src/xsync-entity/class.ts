@@ -1,5 +1,8 @@
 import { InternalXSyncEntity } from "../internal-xsync-entity"
-import type { IWSSOptions } from "./types"
+import type {
+  INetOwnerLogicOptions,
+  IWSSOptions,
+} from "./types"
 
 export class XSyncEntity {
   private static _instance: XSyncEntity | null = null
@@ -9,6 +12,7 @@ export class XSyncEntity {
   constructor (
     streamDelay = 100,
     wss: IWSSOptions,
+    netOwnerLogic?: INetOwnerLogicOptions,
   ) {
     const {
       certPath = "",
@@ -25,14 +29,18 @@ export class XSyncEntity {
       throw new Error("[XSyncEntity] failed to init: specify in wss options certPath & keyPath & domainName if useWss is true")
     }
 
-    this.internal = new InternalXSyncEntity(streamDelay, {
-      localhost,
-      port,
-      certPath,
-      keyPath,
-      domainName,
-      useWss,
-    })
+    this.internal = new InternalXSyncEntity(
+      streamDelay,
+      {
+        localhost,
+        port,
+        certPath,
+        keyPath,
+        domainName,
+        useWss,
+      },
+      netOwnerLogic,
+    )
 
     if (XSyncEntity._instance) {
       throw new Error("XSyncEntity already initialized")

@@ -15,6 +15,8 @@ export interface IStreamerWorkerCreateEntity {
 export interface IStreamerWorkerEntity extends IStreamerWorkerCreateEntity {
   netOwnerId: PlayerId | null
   streamPlayerIds: Set<PlayerId>
+  netOwnerDist: number
+  arrayIndex: number
 }
 
 export interface IStreamerWorkerEntityPool {
@@ -32,11 +34,12 @@ export interface IStreamerWorkerUpdatePlayer {
 
 export interface IStreamerWorkerPlayer {
   streamedEntityIds: Set<number>
+  owneredEntityIds: Set<PlayerId>
   oldPos: alt.IVector2
   oldDimension: number
 }
 
-export interface IStreamerWorkerDistEntity extends IStreamerWorkerEntity {
+export interface IStreamerWorkerArrEntity extends IStreamerWorkerEntity {
   dist: number
 }
 
@@ -55,10 +58,7 @@ export interface ICurrentPlayersUpdate {
   removedPlayerIds: Record<string, true>
 }
 
-/**
- * player data or removed player id as string
- */
-export type PlayersUpdateData = ([PlayerId, IStreamerWorkerUpdatePlayer] | string)[]
+export type PlayersUpdateData = ([PlayerId, IStreamerWorkerUpdatePlayer])[]
 
 export interface IEntityCreateQueue {
   readonly chunkSize: number
@@ -66,3 +66,5 @@ export interface IEntityCreateQueue {
   sendPromise: { resolve: () => void } | null
   started: boolean
 }
+
+export type EntityIdsNetOwnerChanges = Record<number, [oldPlayer: number | null, newPlayer: number | null]>

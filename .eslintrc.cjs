@@ -68,9 +68,6 @@ module.exports = {
     }],
     'node/handle-callback-err': 0,
     '@typescript-eslint/explicit-function-return-type': 0,
-    'no-use-before-define': ['error', {
-      'functions': false, 'classes': true, 'variables': true
-    }],
     '@typescript-eslint/type-annotation-spacing': ['error', {
       'before': false,
       'after': true,
@@ -102,8 +99,12 @@ module.exports = {
     '@typescript-eslint/lines-between-class-members': ['error',  'always', {
       'exceptAfterSingleLine': true
     }],
-    "no-use-before-define": 0,
-    '@typescript-eslint/no-use-before-define': ['error'],
+    'no-use-before-define': 0,
+    '@typescript-eslint/no-use-before-define': ['error', {
+      'functions': false, 
+      'classes': true, 
+      'variables': true
+    }],
   },
   ignorePatterns: [
     '.eslintrc.cjs',

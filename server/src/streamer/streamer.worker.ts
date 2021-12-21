@@ -332,7 +332,7 @@ class StreamerWorker {
 
     const entities = this.entitiesArray
 
-    // TODO fix it for netowners
+    // TODO fix it for netowners & dynamic entity pos change
     if (!this.netOwnerLogicEnabled) {
       if (!this.entitiesSizeBigger && oldDimension === dimension && oldPos.x === pos.x && oldPos.y === pos.y) {
         // this.log.log("old pos & dimension && entities size, skip distance checks")

@@ -13,6 +13,7 @@ import Worker from "./streamer.worker.ts"
 import type { EntityPool } from "../entity-pool"
 import { InternalXSyncEntity } from "../internal-xsync-entity"
 import type {
+  EntityIdsNetOwnerChanges,
   ICurrentPlayersUpdate,
   IEntityCreateQueue,
   IStreamerWorkerCreateEntity,
@@ -142,7 +143,7 @@ export class Streamer {
       this.clearCurrentPlayersUpdate()
     },
 
-    [StreamerFromWorkerEvents.EntitiesNetOwnerChange]: (entityIdsNetOwnerChanges) => {
+    [StreamerFromWorkerEvents.EntitiesNetOwnerChange]: (entityIdsNetOwnerChanges: EntityIdsNetOwnerChanges) => {
       const players = InternalXSyncEntity.instance.players.dict
       const entities = InternalEntity.all
       const {
@@ -151,8 +152,8 @@ export class Streamer {
       } = this.currentPlayersUpdate
       const netOwnerChanges: [InternalEntity, alt.Player | null, alt.Player | null][] = []
 
-      for (let i = 0; i < entityIdsNetOwnerChanges.length; i++) {
-        const [entityId, oldNetOwnerId, newNetOwnerId] = entityIdsNetOwnerChanges[i]
+      for (const entityId in entityIdsNetOwnerChanges) {
+        const [oldNetOwnerId, newNetOwnerId] = entityIdsNetOwnerChanges[entityId]
 
         if (removedEntityIds[entityId]) {
           continue

@@ -16,7 +16,6 @@ import type {
   IStreamerWorkerEntityPool,
   StreamerWorkerPlayersEntities,
   EntityIdsNetOwnerChanges,
-  EntityIdsNetOwnerChangesDict,
 } from "./types"
 import { dist2dWithRange } from "../utils/dist-2d-range"
 
@@ -107,7 +106,7 @@ class StreamerWorker {
       const entitiesSize = this.entitiesArray.length
       const playersInEntityIds: StreamerWorkerPlayersEntities = {}
       const playersOutEntityIds: StreamerWorkerPlayersEntities = {}
-      const entityIdsNetOwnerChanges: EntityIdsNetOwnerChangesDict = {}
+      const entityIdsNetOwnerChanges: EntityIdsNetOwnerChanges = {}
 
       this.entitiesSizeBigger = entitiesSize > this.oldEntitiesSize
       this.oldEntitiesSize = entitiesSize
@@ -199,12 +198,7 @@ class StreamerWorker {
       if (this.netOwnerLogicEnabled && Object.keys(entityIdsNetOwnerChanges).length) {
         this.emit(
           StreamerFromWorkerEvents.EntitiesNetOwnerChange,
-
-          // TODO clean this shit
-          Object.entries(entityIdsNetOwnerChanges)
-            .map(([entityId, netOwners]) =>
-              [+entityId, ...netOwners],
-            ) as EntityIdsNetOwnerChanges,
+          entityIdsNetOwnerChanges,
         )
       }
     },
@@ -221,7 +215,7 @@ class StreamerWorker {
         if (entity.netOwnerId != null) {
           this.emit(
             StreamerFromWorkerEvents.EntitiesNetOwnerChange,
-            [[entityId, entity.netOwnerId, null]],
+            { [entityId]: [entity.netOwnerId, null] },
           )
         }
       }
@@ -328,7 +322,7 @@ class StreamerWorker {
     oldDimension: number,
     streamedEntityIds: Set<number>,
     owneredEntityIds: Set<number>,
-    netOwnerChanges: EntityIdsNetOwnerChangesDict,
+    netOwnerChanges: EntityIdsNetOwnerChanges,
   ): {
       streamIn: number[]
       streamOut: number[]
@@ -507,7 +501,7 @@ class StreamerWorker {
     arrEntity: IStreamerWorkerArrEntity,
     streamedEntityIds: Set<number>,
     streamOutIds: number[],
-    netOwnerChanges: EntityIdsNetOwnerChangesDict,
+    netOwnerChanges: EntityIdsNetOwnerChanges,
     owneredEntityIds: Set<number>,
   ) {
     const entityId = arrEntity.id

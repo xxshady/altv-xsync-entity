@@ -67,5 +67,4 @@ export interface IEntityCreateQueue {
   started: boolean
 }
 
-export type EntityIdsNetOwnerChanges = [entityId: number, oldPlayer: number | null, newPlayer: number | null][]
-export type EntityIdsNetOwnerChangesDict = Record<number, [oldPlayer: number | null, newPlayer: number | null]>
+export type EntityIdsNetOwnerChanges = Record<number, [oldPlayer: number | null, newPlayer: number | null]>

@@ -266,6 +266,38 @@ export class Streamer {
     }
   }
 
+  public updateEntityPos ({ id, pos }: InternalEntity): void {
+    this.emitWorker(
+      StreamerWorkerEvents.SetEntityPos,
+      id,
+      {
+        x: pos.x,
+        y: pos.y,
+      },
+    )
+  }
+
+  public getEntityStreamedPlayers ({ id }: InternalEntity): alt.Player[] {
+    const playerIds = this.entitiesStreamedPlayerIds[id]
+    const players: alt.Player[] = []
+    const { removedPlayerIds } = this.currentPlayersUpdate
+
+    if (!playerIds) {
+      throw new Error(`streamer getEntityStreamedPlayers invalid entity: ${id}`)
+    }
+
+    for (const playerId of playerIds) {
+      const player = InternalXSyncEntity.instance.players.dict[playerId]
+
+      if (!player) continue
+      if (removedPlayerIds[playerId]) continue
+
+      players.push(player)
+    }
+
+    return players
+  }
+
   public removePlayer ({ id }: alt.Player): void {
     this.currentPlayersUpdate.removedPlayerIds[id] = true
     this.deletePlayerStreamEntityIds(id)

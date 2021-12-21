@@ -97,7 +97,27 @@ class StreamerWorker {
     },
 
     [StreamerWorkerEvents.PlayersUpdate]: (playersData, removedPlayerIds) => {
-      // this.log.log("[PlayersUpdate] entities:", Object.values(this.entities).filter(e => e.streamPlayerIds.size > 0))
+      // this.log.log(
+      //   "[PlayersUpdate] entities:",
+      //   ___DEV_MODE
+      //     ? Object.values(this.entities).map(({
+      //       id,
+      //       arrayIndex,
+      //       pos,
+      //       streamPlayerIds,
+      //       netOwnerId,
+      //       netOwnerDist,
+      //     }) => ({
+      //       id,
+      //       arrayIndex,
+      //       pos,
+      //       streamPlayerIds,
+      //       netOwnerId,
+      //       netOwnerDist: +netOwnerDist.toFixed(1),
+      //     }))
+      //     : null,
+      // )
+      // this.log.log("[PlayersUpdate] entitiesArray:", this.entitiesArray.map(({ id, arrayIndex }) => ({ id, arrayIndex })))
       // this.log.log("[PlayersUpdate] playersData:", playersData, "removed players:", removedPlayerIds)
 
       // const label = `entities: ${this.entitiesArray.length}`
@@ -228,6 +248,19 @@ class StreamerWorker {
 
     [StreamerWorkerEvents.EnableNetOwnerLogic]: () => {
       this.netOwnerLogicEnabled = true
+    },
+
+    [StreamerWorkerEvents.SetEntityPos]: (entityId, pos) => {
+      // this.log.log(`SetEntityPos entity: ${entityId} pos:`, pos)
+
+      const entity = this.entities[entityId]
+      if (!entity) return
+
+      entity.pos = pos
+      this.entitiesArray[entity.arrayIndex].pos = pos
+
+      // TODO maybe add simple distance check here
+      // for faster stream out or netowner migration
     },
   }
 
@@ -372,7 +405,7 @@ class StreamerWorker {
       )
     }
 
-    const sortedEntities = entities.sort(this.sortEntityDists)
+    const sortedEntities = [...entities].sort(this.sortEntityDists)
 
     // console.log(`sortedEntities: ${sortedEntities.map(e => e.id).join(", ")}`)
 

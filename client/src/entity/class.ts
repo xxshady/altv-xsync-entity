@@ -7,10 +7,14 @@ export abstract class Entity<T extends EntityData = EntityData> {
 
   constructor (
     public readonly id: number,
-    public readonly pos: alt.IVector3,
+    pos: alt.IVector3,
     public readonly data: T,
   ) {
     this.internalInstance = new InternalEntity(this, id, pos)
+  }
+
+  public get pos (): alt.IVector3 {
+    return this.internalInstance.pos
   }
 
   public get netOwnered (): boolean {
@@ -19,4 +23,6 @@ export abstract class Entity<T extends EntityData = EntityData> {
 
   public abstract streamIn (pos: alt.IVector3, data: T): void
   public abstract streamOut (): void
+
+  public posChange? (pos: alt.IVector3): void
 }

@@ -28,7 +28,7 @@ export class Entity<TData extends EntityData = EntityData> {
 
   constructor (
     public readonly pool: EntityPool,
-    public readonly pos: alt.IVector3,
+    private _pos: alt.IVector3,
     data = {} as TData,
     dimension = 0,
     streamRange = 300,
@@ -38,7 +38,7 @@ export class Entity<TData extends EntityData = EntityData> {
       this,
       pool.id,
       this.id,
-      pos,
+      _pos,
       data,
       dimension,
       streamRange,
@@ -53,6 +53,16 @@ export class Entity<TData extends EntityData = EntityData> {
 
   public get valid (): boolean {
     return this._valid
+  }
+
+  public get pos (): alt.IVector3 {
+    return this._pos
+  }
+
+  @valid()
+  public set pos (value: alt.IVector3) {
+    this.internalInstance.pos = value
+    this._pos = value
   }
 
   @valid()

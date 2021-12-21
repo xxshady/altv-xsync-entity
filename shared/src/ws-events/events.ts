@@ -1,6 +1,7 @@
 import type {
   WSEntityCreate,
   WSEntityNetOwner,
+  WSVector3,
 } from "./types"
 
 export enum WSClientOnServerEvents {
@@ -8,6 +9,7 @@ export enum WSClientOnServerEvents {
   EntitiesStreamOut,
   EntityDestroy,
   EntitiesNetOwnerChange,
+  EntityPosChange,
 }
 
 export interface IWSClientOnServerEvent {
@@ -15,4 +17,5 @@ export interface IWSClientOnServerEvent {
   [WSClientOnServerEvents.EntitiesStreamOut]: (entityIds: number[]) => void
   [WSClientOnServerEvents.EntityDestroy]: (entityId: number) => void
   [WSClientOnServerEvents.EntitiesNetOwnerChange]: (entities: WSEntityNetOwner[]) => void
+  [WSClientOnServerEvents.EntityPosChange]: (entityId: number, pos: WSVector3) => void
 }

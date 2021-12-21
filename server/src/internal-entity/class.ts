@@ -14,7 +14,7 @@ export class InternalEntity {
     public readonly publicInstance: Entity,
     public readonly poolId: number,
     public readonly id: number,
-    public readonly pos: alt.IVector3,
+    public _pos: alt.IVector3,
     public readonly data: EntityData,
     public readonly dimension: number,
     public readonly streamRange: number,
@@ -22,6 +22,16 @@ export class InternalEntity {
   ) {
     (InternalEntity.all as InternalEntityDict)[id] = this
     InternalXSyncEntity.instance.addEntity(this)
+  }
+
+  public get pos (): alt.IVector3 {
+    return this._pos
+  }
+
+  public set pos (value: alt.IVector3) {
+    this._pos = value
+
+    InternalXSyncEntity.instance.updateEntityPos(this)
   }
 
   public destroy (): void {

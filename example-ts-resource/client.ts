@@ -13,7 +13,7 @@ new EntityPool(EntityPools.Marker, class Marker extends Entity<IMarkerData> {
     this.render = alt.everyTick(() => {
       native.drawMarker(
         type,
-        pos.x, pos.y, pos.z,
+        this.pos.x, this.pos.y, this.pos.z,
         0, 0, 0,
         0, 0, 0,
         0.5, 0.5, 0.5,
@@ -31,5 +31,9 @@ new EntityPool(EntityPools.Marker, class Marker extends Entity<IMarkerData> {
 
   public streamOut (): void {
     alt.clearEveryTick(this.render)
+  }
+
+  public posChange (pos: alt.IVector3): void {
+    alt.log(`marker [${this.id}] pos changed:`, pos.x, pos.y)
   }
 })

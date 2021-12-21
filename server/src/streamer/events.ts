@@ -1,3 +1,4 @@
+import type * as alt from "alt-server"
 import type {
   EntityIdsNetOwnerChanges,
   IStreamerWorkerCreateEntity,
@@ -12,6 +13,7 @@ export enum StreamerWorkerEvents {
   DestroyEntity,
   PlayersUpdate,
   EnableNetOwnerLogic,
+  SetEntityPos,
 }
 
 export enum StreamerFromWorkerEvents {
@@ -39,6 +41,7 @@ export interface IStreamerWorkerEvent {
    */
   [StreamerWorkerEvents.PlayersUpdate]: (players: PlayersUpdateData, removedPlayerIds: string[]) => void
   [StreamerWorkerEvents.EnableNetOwnerLogic]: () => void
+  [StreamerWorkerEvents.SetEntityPos]: (entityId: number, pos: alt.IVector2) => void
 }
 
 export type IStreamerSharedWorkerMessage<

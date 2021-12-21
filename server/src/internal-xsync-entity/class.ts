@@ -99,6 +99,21 @@ export class InternalXSyncEntity {
     this.streamer.removeEntity(entity)
   }
 
+  public updateEntityPos (entity: InternalEntity): void {
+    this.streamer.updateEntityPos(entity)
+
+    const players = this.streamer.getEntityStreamedPlayers(entity)
+
+    for (let i = 0; i < players.length; i++) {
+      this.emitWSPlayer(
+        players[i],
+        WSClientOnServerEvents.EntityPosChange,
+        entity.id,
+        WSVectors.altToWS(entity.pos),
+      )
+    }
+  }
+
   private emitWSPlayer <K extends WSClientOnServerEvents> (player: alt.Player, eventName: K, ...args: Parameters<IWSClientOnServerEvent[K]>) {
     this.wss.sendPlayer(
       player,

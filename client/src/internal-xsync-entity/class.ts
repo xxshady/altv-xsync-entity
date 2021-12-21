@@ -13,7 +13,6 @@ import { createLogger, LogLevel } from "altv-xlogger"
 import { InternalEntityPool } from "../internal-entity-pool"
 import { getServerIp } from "../utils/get-server-ip"
 import type { INetOwnerLogicOptions } from "../xsync-entity/types"
-import type { Entity } from "../entity"
 import type { InternalEntity } from "../internal-entity"
 
 export class InternalXSyncEntity {
@@ -103,6 +102,13 @@ export class InternalXSyncEntity {
           this.netOwnerChangeHandler?.(entity.publicInstance, netOwnered)
         } else this.removeNetOwneredEntity(entity)
       }
+    },
+
+    [WSClientOnServerEvents.EntityPosChange]: (entityId, pos) => {
+      const entity = InternalEntityPool.entities[entityId]
+      if (!entity) return
+
+      entity.posChange(WSVectors.WStoAlt(pos))
     },
   }
 

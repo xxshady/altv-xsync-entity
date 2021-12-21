@@ -19,7 +19,7 @@ export class InternalEntity {
   constructor (
     public readonly publicInstance: Entity,
     public readonly id: number,
-    public readonly pos: alt.IVector3,
+    public pos: alt.IVector3,
   ) {
     InternalEntity.publicInternals.set(publicInstance, this)
   }
@@ -30,5 +30,10 @@ export class InternalEntity {
 
   public streamOut (): void {
     this.publicInstance.streamOut()
+  }
+
+  public posChange (pos: alt.IVector3): void {
+    this.pos = pos
+    this.publicInstance.posChange?.(pos)
   }
 }

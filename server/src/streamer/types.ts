@@ -6,10 +6,10 @@ export type PlayerId = alt.Player["id"]
 export interface IStreamerWorkerCreateEntity {
   readonly id: number
   readonly poolId: number
-  readonly pos: alt.IVector2
   readonly dimension: number
   readonly streamRange: number
   readonly migrationRange: number
+  pos: alt.IVector2
 }
 
 export interface IStreamerWorkerEntity extends IStreamerWorkerCreateEntity {

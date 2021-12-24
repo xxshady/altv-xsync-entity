@@ -62,8 +62,8 @@ class StreamerWorker {
    * array for faster iteration through it in for loop
    */
   private entitiesArray: IStreamerWorkerArrEntity[] = []
-  private oldEntitiesSize = 0
-  private entitiesSizeBigger = false
+  // private oldEntitiesSize = 0
+  // private entitiesSizeBigger = false
   private netOwnerLogicEnabled = false
 
   private readonly log = new Logger()
@@ -123,13 +123,13 @@ class StreamerWorker {
       // const label = `entities: ${this.entitiesArray.length}`
       // this.log.time(label)
 
-      const entitiesSize = this.entitiesArray.length
+      // const entitiesSize = this.entitiesArray.length
       const playersInEntityIds: StreamerWorkerPlayersEntities = {}
       const playersOutEntityIds: StreamerWorkerPlayersEntities = {}
       const entityIdsNetOwnerChanges: EntityIdsNetOwnerChanges = {}
 
-      this.entitiesSizeBigger = entitiesSize > this.oldEntitiesSize
-      this.oldEntitiesSize = entitiesSize
+      // this.entitiesSizeBigger = entitiesSize > this.oldEntitiesSize
+      // this.oldEntitiesSize = entitiesSize
 
       for (let i = 0; i < removedPlayerIds.length; i++) {
         const playerId = +removedPlayerIds[i]
@@ -243,7 +243,7 @@ class StreamerWorker {
       delete this.entities[entityId]
 
       this.updateEntitiesArray()
-      this.oldEntitiesSize = this.entitiesArray.length
+      // this.oldEntitiesSize = this.entitiesArray.length
     },
 
     [StreamerWorkerEvents.EnableNetOwnerLogic]: () => {
@@ -366,29 +366,29 @@ class StreamerWorker {
     const entities = this.entitiesArray
 
     // TODO fix it for netowners & dynamic entity pos change
-    if (!this.netOwnerLogicEnabled) {
-      if (!this.entitiesSizeBigger && oldDimension === dimension && oldPos.x === pos.x && oldPos.y === pos.y) {
-        // this.log.log("old pos & dimension && entities size, skip distance checks")
+    // if (!this.netOwnerLogicEnabled) {
+    //   if (!this.entitiesSizeBigger && oldDimension === dimension && oldPos.x === pos.x && oldPos.y === pos.y) {
+    //     // this.log.log("old pos & dimension && entities size, skip distance checks")
 
-        for (let i = 0; i < entities.length; i++) {
-          const entity = entities[i]
+    //     for (let i = 0; i < entities.length; i++) {
+    //       const entity = entities[i]
 
-          if (dimension === entity.dimension) continue
+    //       if (dimension === entity.dimension) continue
 
-          this.streamOutEntityPlayer(
-            playerId, entity, streamedEntityIds, streamOutIds,
-            netOwnerChanges, owneredEntityIds,
-          )
+    //       this.streamOutEntityPlayer(
+    //         playerId, entity, streamedEntityIds, streamOutIds,
+    //         netOwnerChanges, owneredEntityIds,
+    //       )
 
-          entity.dist = Infinity
-        }
+    //       entity.dist = Infinity
+    //     }
 
-        return {
-          streamIn: streamInIds,
-          streamOut: streamOutIds,
-        }
-      }
-    }
+    //     return {
+    //       streamIn: streamInIds,
+    //       streamOut: streamOutIds,
+    //     }
+    //   }
+    // }
 
     for (let i = 0; i < entities.length; i++) {
       const entity = entities[i]

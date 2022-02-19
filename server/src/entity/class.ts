@@ -69,5 +69,7 @@ export class Entity<TData extends EntityData = EntityData> {
   public destroy (): void {
     this.internalInstance.destroy()
     InternalXSyncEntity.instance.idProvider.freeId(this.id)
+
+    this._valid = false
   }
 }

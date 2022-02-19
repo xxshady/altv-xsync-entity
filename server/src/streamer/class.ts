@@ -475,11 +475,11 @@ export class Streamer {
       const entitiesToSend = entities.splice(0, chunkSize)
       if (entitiesToSend.length < 1) return
 
-      const label = `xsync streamer entity create (${entitiesToSend[entitiesToSend.length - 1].id})`
-      console.time(label)
+      // const label = `xsync streamer entity create (${entitiesToSend[entitiesToSend.length - 1].id})`
+      // console.time(label)
       this.sendCreateEntities(entitiesToSend)
       await this.waitEntitiesCreate()
-      console.timeEnd(label)
+      // console.timeEnd(label)
     }
 
     entityCreateQueue.started = false

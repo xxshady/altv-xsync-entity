@@ -16,7 +16,7 @@ import { MessageEventsManager } from "altv-xsync-entity-shared"
 import fs from "fs"
 
 export class WSServer {
-  private readonly log = createLogger("WSServer")
+  private readonly log = createLogger("xsync:ws")
   /**
    * key number - player.id
    */

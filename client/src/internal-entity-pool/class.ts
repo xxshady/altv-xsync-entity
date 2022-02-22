@@ -9,7 +9,7 @@ import type { EntitiesDict, IEntityClass } from "./types"
 export class InternalEntityPool<T extends EntityData = EntityData> {
   public static readonly entities: Readonly<EntitiesDict> = {}
 
-  private static readonly log = createLogger("InternalEntityPool")
+  private static readonly log = createLogger("xsync:internal-entitypool")
 
   public static streamOutEntity (entityOrId: number | InternalEntity): void {
     let entity: InternalEntity
@@ -35,7 +35,7 @@ export class InternalEntityPool<T extends EntityData = EntityData> {
     public readonly id: number,
     public readonly EntityClass: IEntityClass<T>,
   ) {
-    this.log = createLogger(`EntityPool ${EntityClass.name} (id: ${this.id})`)
+    this.log = createLogger(`xsync:entitypool ${EntityClass.name} (id: ${this.id})`)
 
     InternalXSyncEntity.instance.addEntityPool(this as InternalEntityPool)
   }

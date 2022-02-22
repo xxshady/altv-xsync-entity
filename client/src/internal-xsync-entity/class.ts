@@ -29,7 +29,7 @@ export class InternalXSyncEntity {
     return _instance
   }
 
-  private readonly log = createLogger("XSyncEntity", {
+  private readonly log = createLogger("xsync", {
     logLevel: ___DEV_MODE ? LogLevel.Info : LogLevel.Warn,
   })
 

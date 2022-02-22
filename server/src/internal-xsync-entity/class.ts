@@ -1,6 +1,6 @@
 import * as alt from "alt-server"
 import { IdProvider } from "../id-provider"
-import { WSServer } from "../ws-server"
+import { WSConnectTimeoutError, WSServer } from "../ws-server"
 import { Streamer } from "../streamer"
 import type {
   IWSClientOnServerEvent,
@@ -39,7 +39,7 @@ export class InternalXSyncEntity {
   public readonly idProvider = new IdProvider()
   public readonly players = new Players()
 
-  private readonly log = createLogger("InternalXSyncEntity")
+  private readonly log = createLogger("xsync:internal")
   private readonly wsServerUrl: string
 
   private readonly netOwnerChangeHandler: INetOwnerLogicOptions["entityNetOwnerChange"]
@@ -135,29 +135,25 @@ export class InternalXSyncEntity {
     this.removePlayer(player)
   }
 
-  private async addPlayer (player: alt.Player) {
-    try {
-      this.log.log(`~gl~addPlayer:~w~ ${player.valid ? player.id : "unknown id"}`)
+  private async addPlayer (player: alt.Player, connectTimeoutMs?: number) {
+    this.log.log(`~gl~addPlayer:~w~ ${player.valid ? player.id : "unknown id"}`)
 
-      const authCode = this.wss.addPlayer(player)
+    const authCode = this.wss.addPlayer(player)
 
-      alt.emitClient(
-        player,
-        ClientOnServerEvents.AddPlayer,
-        authCode,
-        this.wsServerUrl,
-      )
+    alt.emitClient(
+      player,
+      ClientOnServerEvents.AddPlayer,
+      authCode,
+      this.wsServerUrl,
+    )
 
-      const start = +new Date()
+    const start = +new Date()
 
-      await this.wss.waitPlayerConnect(player)
+    await this.wss.waitPlayerConnect(player, connectTimeoutMs)
 
-      this.log.log("player connected to ws in", +new Date() - start, "ms")
+    this.log.log("player connected to ws in", +new Date() - start, "ms")
 
-      this.players.add(player)
-    } catch (e) {
-      this.log.error(e)
-    }
+    this.players.add(player)
   }
 
   private removePlayer (player: alt.Player) {
@@ -240,9 +236,20 @@ export class InternalXSyncEntity {
   }
 
   private onWSSocketClose (player: alt.Player) {
-    this.log.warn("socket close player:", player.name, "trying to add again..")
+    this.log.warn("socket close player:", `${player.name} [${player.id}]`, "trying to add again..")
 
     this.removePlayer(player)
-    this.addPlayer(player).catch(this.log.error)
+    this.addPlayer(player, 30_000)
+      .catch((error) => {
+        if (error instanceof WSConnectTimeoutError) {
+          const { playerInfo } = error
+          if (!playerInfo) return
+
+          this.log.error("socket close player:", playerInfo, "connect timed out")
+          return
+        }
+
+        this.log.error("socket close", error.stack)
+      })
   }
 }

@@ -8,7 +8,7 @@ import type { InternalEntityDict } from "./types"
 export class InternalEntity {
   public static readonly all: Readonly<InternalEntityDict> = {}
 
-  private static readonly log = createLogger("InternalEntity")
+  private static readonly log = createLogger("xsync:internal-entity")
 
   constructor (
     public readonly publicInstance: Entity,

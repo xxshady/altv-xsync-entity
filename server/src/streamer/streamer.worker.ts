@@ -20,7 +20,7 @@ import type {
 import { dist2dWithRange } from "../utils/dist-2d-range"
 
 class Logger {
-  private readonly prefix = "[xsync-entity:streamer:worker]"
+  private readonly prefix = "[xsync:streamer:worker]"
   private label = ""
   private readonly enableInfo = ___DEV_MODE
 

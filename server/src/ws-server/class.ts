@@ -14,6 +14,7 @@ import uuidv4 from "../utils/uuidv4"
 import { createLogger } from "altv-xlogger"
 import { MessageEventsManager } from "altv-xsync-entity-shared"
 import fs from "fs"
+import { WSConnectTimeoutError } from "./errors"
 
 export class WSServer {
   private readonly log = createLogger("xsync:ws")
@@ -135,12 +136,12 @@ export class WSServer {
     this.players.delete(player.id)
   }
 
-  public waitPlayerConnect (player: alt.Player): Promise<void> {
+  public waitPlayerConnect (player: alt.Player, timeoutMs = 60_000): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const timer = alt.setTimeout(() => {
         if (!this.playerConnectWaits.delete(player)) return
-        reject(new Error((`[waitPlayerConnect] connect timed out player: ${player.valid ? player.name : "disconnected"}`)))
-      }, 10000)
+        reject(new WSConnectTimeoutError(player.valid ? `${player.name} [${player.id}]` : null))
+      }, timeoutMs)
 
       this.playerConnectWaits.set(player, {
         resolve: () => {

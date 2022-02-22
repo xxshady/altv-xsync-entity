@@ -25,7 +25,7 @@ import type { Entity } from "../entity"
 
 export class Streamer {
   private readonly worker = new Worker()
-  private readonly log = createLogger("altv-xsync-entity:streamer", {
+  private readonly log = createLogger("xsync:streamer", {
     logLevel: ___DEV_MODE ? LogLevel.Info : LogLevel.Warn,
   })
 

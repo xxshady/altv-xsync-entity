@@ -2,7 +2,7 @@ import { createLogger } from "altv-xlogger"
 import type { Events } from "./types"
 
 export class MessageEventsManager<T extends Events = Events> {
-  private readonly log = createLogger("MessageManager")
+  private readonly log = createLogger("xsync:message-manager")
   private readonly eventsHandlers: T
 
   constructor (events: T) {

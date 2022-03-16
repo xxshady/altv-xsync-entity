@@ -8,8 +8,8 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@altv/types-client": "1.x",
-    "@altv/types-shared": "1.x"
+    "@altv/types-client": ">=2.x",
+    "@altv/types-shared": ">=1.x"
   },
   "type": "module",
   "scripts": {

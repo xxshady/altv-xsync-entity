@@ -10,7 +10,7 @@ export class MessageEventsManager<T extends Events = Events> {
   }
 
   public send <K extends keyof T> (eventName: K, args: Parameters<T[K]>): string {
-    let message = `${eventName}|`
+    let message = `${eventName as string}|`
 
     message += JSON.stringify(args)
 

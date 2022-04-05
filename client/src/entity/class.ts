@@ -4,7 +4,7 @@ import { InternalEntity } from "../internal-entity"
 import { InternalEntityPool } from "../internal-entity-pool"
 
 export abstract class Entity<T extends EntityData = EntityData> {
-  private readonly internalInstance: InternalEntity
+  private readonly internalInstance: InternalEntity<T>
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public static getByID<T extends new (...args: any) => Entity> (this: T, id: number): InstanceType<T> | null {
@@ -12,12 +12,13 @@ export abstract class Entity<T extends EntityData = EntityData> {
     return (entity instanceof this) ? entity : null
   }
 
+  // TODO: make constructor private
   constructor (
     public readonly id: number,
     pos: alt.IVector3,
-    public readonly data: T,
+    data: Readonly<T>,
   ) {
-    this.internalInstance = new InternalEntity(this, id, pos)
+    this.internalInstance = new InternalEntity<T>(this, id, pos, data)
   }
 
   public get pos (): alt.IVector3 {
@@ -28,8 +29,7 @@ export abstract class Entity<T extends EntityData = EntityData> {
     return this.internalInstance.netOwnered
   }
 
-  public abstract streamIn (pos: alt.IVector3, data: T): void
-  public abstract streamOut (): void
-
-  public posChange? (pos: alt.IVector3): void
+  public get data (): Readonly<T> {
+    return this.internalInstance.data
+  }
 }

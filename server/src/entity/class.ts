@@ -21,7 +21,7 @@ export class Entity<TData extends EntityData = EntityData> {
   private readonly internalInstance: InternalEntity
   private _valid = true
 
-  public readonly data: TData
+  private readonly _data: TData
   public readonly dimension: number
   public readonly streamRange: number
   public readonly migrationRange: number
@@ -45,7 +45,7 @@ export class Entity<TData extends EntityData = EntityData> {
       migrationRange,
     )
 
-    this.data = data
+    this._data = data
     this.dimension = dimension
     this.streamRange = streamRange
     this.migrationRange = migrationRange
@@ -65,11 +65,24 @@ export class Entity<TData extends EntityData = EntityData> {
     this._pos = value
   }
 
+  public get data (): Readonly<TData> {
+    return this.data
+  }
+
   @valid()
   public destroy (): void {
     this.internalInstance.destroy()
     InternalXSyncEntity.instance.idProvider.freeId(this.id)
 
     this._valid = false
+  }
+
+  @valid()
+  public updateData (value: Partial<TData>): void {
+    for (const key in value) {
+      this._data[key as keyof TData] = value[key as keyof TData] as TData[keyof TData]
+    }
+
+    InternalXSyncEntity.instance.updateEntityData(this.internalInstance, value)
   }
 }

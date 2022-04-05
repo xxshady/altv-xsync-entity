@@ -1,8 +1,8 @@
 import { InternalEntityPool } from "../internal-entity-pool"
 import type { IEntityClass } from "../internal-entity-pool"
-import type { EntityData } from "altv-xsync-entity-shared"
+import type { Entity } from "../main"
 
-export class EntityPool<T extends EntityData = EntityData> {
+export class EntityPool <T extends Entity> {
   private readonly internal: InternalEntityPool
 
   constructor (

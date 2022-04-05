@@ -1,18 +1,25 @@
 import * as alt from "alt-client"
 import * as native from "natives"
-import { XSyncEntity, EntityPool, Entity } from "altv-xsync-entity-client"
-import { EntityPools, IMarkerData } from "./shared"
+import * as xsync from "altv-xsync-entity-client"
+import type { IMarkerData } from "./shared"
+import { EntityPools } from "./shared"
 
 // in the future, options will be passed to the constructor
-new XSyncEntity()
+new xsync.XSyncEntity()
 
-new EntityPool(EntityPools.Marker, class Marker extends Entity<IMarkerData> {
+@xsync.onEntityEvents<Marker>({
+  streamIn: (entity) => entity.streamIn(),
+  streamOut: (entity) => entity.streamOut(),
+  dataChange: (entity, data) => entity.dataChange(data),
+  posChange: (entity, pos) => entity.posChange(pos),
+})
+class Marker extends xsync.Entity<IMarkerData> {
   private render = 0
 
-  public streamIn (pos: alt.Vector3, { type }: IMarkerData): void {
+  private streamIn(): void {
     this.render = alt.everyTick(() => {
       native.drawMarker(
-        type,
+        this.data.type,
         this.pos.x, this.pos.y, this.pos.z,
         0, 0, 0,
         0, 0, 0,
@@ -29,11 +36,17 @@ new EntityPool(EntityPools.Marker, class Marker extends Entity<IMarkerData> {
     })
   }
 
-  public streamOut (): void {
+  private streamOut(): void {
     alt.clearEveryTick(this.render)
   }
 
-  public posChange (pos: alt.IVector3): void {
+  private dataChange(data: Partial<IMarkerData>) {
+    alt.log("dataChange:", JSON.stringify(data, null, 2))
+  }
+
+  public posChange(pos: alt.IVector3): void {
     alt.log(`marker [${this.id}] pos changed:`, pos.x, pos.y)
   }
-})
+}
+
+new xsync.EntityPool(EntityPools.Marker, Marker)

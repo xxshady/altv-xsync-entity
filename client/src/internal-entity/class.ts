@@ -1,8 +1,20 @@
 import type * as alt from "alt-client"
+import { createLogger, LogLevel } from "altv-xlogger"
+import type { EntityData } from "altv-xsync-entity-shared"
 import type { Entity } from "../entity"
+import type { IEntityClass } from "../internal-entity-pool"
+import type { IEntityEventHandlers, ParametersExceptFirst } from "./types"
 
-export class InternalEntity {
+const log = createLogger(
+  "xsync",
+  { logLevel: ___DEV_MODE ? LogLevel.Info : LogLevel.Warn },
+)
+
+export class InternalEntity<T extends EntityData = EntityData> {
   private static readonly publicInternals = new Map<Entity, InternalEntity>()
+  private static handlers = new Map<IEntityClass, IEntityEventHandlers>()
+
+  public static readonly reservedEntities: Partial<Record<Entity["id"], true>> = {}
 
   public static getInternalByPublic (publicEntity: Entity): InternalEntity {
     const internal = this.publicInternals.get(publicEntity)
@@ -14,26 +26,68 @@ export class InternalEntity {
     return internal
   }
 
+  public static addEventHandlers (entityClass: IEntityClass, handlers: IEntityEventHandlers): void {
+    this.handlers.set(entityClass, handlers)
+  }
+
+  private static handleEvent <K extends keyof IEntityEventHandlers> (
+    entity: InternalEntity,
+    eventName: K,
+    ...args: ParametersExceptFirst<Required<IEntityEventHandlers>[K]>
+  ) {
+    const entityClass = entity.publicInstance.constructor as IEntityClass
+    const logMessage = `received remote event "${eventName}" for entity class: ${entityClass.name} |`
+
+    const handlers = this.handlers.get(entityClass)
+    if (!handlers) {
+      throw new Error(`[xsync] ${logMessage} no event handlers are set, use the @onEvents() decorator on your entity class`)
+    }
+
+    const handler = handlers[eventName]
+    if (!handler) {
+      log.warn(`${logMessage} no handler is set, which can be set in the @onEvents() decorator`)
+      return
+    }
+
+    // shut up stupid ts
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    handler(entity.publicInstance, ...args as [arg0?: any])
+  }
+
   public netOwnered = false
 
   constructor (
     public readonly publicInstance: Entity,
     public readonly id: number,
     public pos: alt.IVector3,
+    public readonly data: T,
   ) {
+    // TODO: make public Entity constructor private and remove this shit
+    if (!InternalEntity.reservedEntities[id]) {
+      throw new Error("Entity cannot be created by client")
+    }
+    delete InternalEntity.reservedEntities[id]
+
     InternalEntity.publicInternals.set(publicInstance, this)
   }
 
   public streamIn (): void {
-    this.publicInstance.streamIn(this.publicInstance.pos, this.publicInstance.data)
+    InternalEntity.handleEvent(this, "streamIn")
   }
 
   public streamOut (): void {
-    this.publicInstance.streamOut()
+    InternalEntity.handleEvent(this, "streamOut")
   }
 
   public posChange (pos: alt.IVector3): void {
     this.pos = pos
-    this.publicInstance.posChange?.(pos)
+    InternalEntity.handleEvent(this, "posChange", pos)
+  }
+
+  public dataChange (data: Partial<T>): void {
+    for (const key in data) {
+      this.data[key as keyof T] = data[key as keyof T] as T[keyof T]
+    }
+    InternalEntity.handleEvent(this, "dataChange", data)
   }
 }

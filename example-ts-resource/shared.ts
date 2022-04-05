@@ -4,5 +4,4 @@ export enum EntityPools {
 
 export interface IMarkerData {
   type: number
-  [key: string]: unknown
 }

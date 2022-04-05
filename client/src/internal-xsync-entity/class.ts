@@ -13,7 +13,7 @@ import { createLogger, LogLevel } from "altv-xlogger"
 import { InternalEntityPool } from "../internal-entity-pool"
 import { getServerIp } from "../utils/get-server-ip"
 import type { INetOwnerLogicOptions } from "../xsync-entity/types"
-import type { InternalEntity } from "../internal-entity"
+import { InternalEntity } from "../internal-entity"
 
 export class InternalXSyncEntity {
   // TODO move in shared
@@ -50,6 +50,10 @@ export class InternalXSyncEntity {
         }
 
         const posVector3 = WSVectors.WStoAlt(pos)
+
+        // TODO: make public Entity constructor private and remove this shit
+        InternalEntity.reservedEntities[entityId] = true
+
         const entity = new entityPool.EntityClass(
           entityId,
           posVector3,
@@ -109,6 +113,13 @@ export class InternalXSyncEntity {
       if (!entity) return
 
       entity.posChange(WSVectors.WStoAlt(pos))
+    },
+
+    [WSClientOnServerEvents.EntityDataChange]: (entityId, data) => {
+      const entity = InternalEntityPool.entities[entityId]
+      if (!entity) return
+
+      entity.dataChange(data)
     },
   }
 

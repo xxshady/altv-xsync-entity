@@ -10,6 +10,7 @@ export enum WSClientOnServerEvents {
   EntityDestroy,
   EntitiesNetOwnerChange,
   EntityPosChange,
+  EntityDataChange,
 }
 
 export interface IWSClientOnServerEvent {
@@ -18,4 +19,5 @@ export interface IWSClientOnServerEvent {
   [WSClientOnServerEvents.EntityDestroy]: (entityId: number) => void
   [WSClientOnServerEvents.EntitiesNetOwnerChange]: (entities: WSEntityNetOwner[]) => void
   [WSClientOnServerEvents.EntityPosChange]: (entityId: number, pos: WSVector3) => void
+  [WSClientOnServerEvents.EntityDataChange]: (entityId: number, data: Record<string, unknown>) => void
 }

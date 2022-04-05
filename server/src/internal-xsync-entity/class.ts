@@ -102,16 +102,21 @@ export class InternalXSyncEntity {
   public updateEntityPos (entity: InternalEntity): void {
     this.streamer.updateEntityPos(entity)
 
-    const players = this.streamer.getEntityStreamedPlayers(entity)
+    this.emitWSStreamedPlayers(
+      entity,
+      WSClientOnServerEvents.EntityPosChange,
+      entity.id,
+      WSVectors.altToWS(entity.pos),
+    )
+  }
 
-    for (let i = 0; i < players.length; i++) {
-      this.emitWSPlayer(
-        players[i],
-        WSClientOnServerEvents.EntityPosChange,
-        entity.id,
-        WSVectors.altToWS(entity.pos),
-      )
-    }
+  public updateEntityData (entity: InternalEntity, data: Record<string, unknown>): void {
+    this.emitWSStreamedPlayers(
+      entity,
+      WSClientOnServerEvents.EntityDataChange,
+      entity.id,
+      data,
+    )
   }
 
   private emitWSPlayer <K extends WSClientOnServerEvents> (player: alt.Player, eventName: K, ...args: Parameters<IWSClientOnServerEvent[K]>) {
@@ -120,6 +125,22 @@ export class InternalXSyncEntity {
       eventName.toString(),
       ...args,
     )
+  }
+
+  private emitWSStreamedPlayers <K extends WSClientOnServerEvents> (
+    entity: InternalEntity,
+    eventName: K,
+    ...args: Parameters<IWSClientOnServerEvent[K]>
+  ) {
+    const players = this.streamer.getEntityStreamedPlayers(entity)
+
+    for (let i = 0; i < players.length; i++) {
+      this.emitWSPlayer(
+        players[i],
+        eventName,
+        ...args,
+      )
+    }
   }
 
   private setupAltvEvents () {

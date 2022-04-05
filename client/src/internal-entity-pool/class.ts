@@ -1,12 +1,11 @@
 import { createLogger } from "altv-xlogger"
 import type { ILogger } from "altv-xlogger/dist/types"
-import type { EntityData } from "altv-xsync-entity-shared"
 import type { Entity } from "../entity"
 import { InternalEntity } from "../internal-entity"
 import { InternalXSyncEntity } from "../internal-xsync-entity"
 import type { EntitiesDict, IEntityClass } from "./types"
 
-export class InternalEntityPool<T extends EntityData = EntityData> {
+export class InternalEntityPool {
   public static readonly entities: Readonly<EntitiesDict> = {}
 
   private static readonly log = createLogger("xsync:internal-entitypool")
@@ -33,7 +32,7 @@ export class InternalEntityPool<T extends EntityData = EntityData> {
 
   constructor (
     public readonly id: number,
-    public readonly EntityClass: IEntityClass<T>,
+    public readonly EntityClass: IEntityClass,
   ) {
     this.log = createLogger(`xsync:entitypool ${EntityClass.name} (id: ${this.id})`)
 

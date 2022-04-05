@@ -1,10 +1,11 @@
 import * as alt from "alt-server"
+import type { IMarkerData } from "./shared"
+import { EntityPools } from "./shared"
 import { XSyncEntity, EntityPool, Entity } from "altv-xsync-entity-server"
-import { EntityPools, IMarkerData } from "./shared"
 
 new XSyncEntity(
   100,
-  // xsyncentity will create websocket ws:// (http) server 
+  // xsyncentity will create websocket ws:// (http) server
   // that will use local machine ip for connecting on client (alt.WebSocketClient)
   // for e.g. your external ip is 9.9.9.9
   // remote client will use "ws://9.9.9.9:7700" in alt.WebSocketClient
@@ -41,12 +42,12 @@ const markersPool = new EntityPool(
 )
 
 class Marker extends Entity<IMarkerData> {
-  constructor (pos: alt.IVector3, type: number) {
+  constructor(pos: alt.IVector3, type: number) {
     super(
       markersPool,
       pos,
       { type },
-      1,
+      0,
       10,
     )
   }
@@ -62,7 +63,10 @@ new Marker(
   1,
 )
 
-new Marker(
+const marker = new Marker(
   new alt.Vector3(0, 2, 71.5),
   2,
 )
+
+// this will send updated partial data to the client in "dataChange" event
+marker.updateData({ type: 5 })

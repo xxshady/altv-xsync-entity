@@ -149,7 +149,10 @@ export class InternalXSyncEntity {
   }
 
   private onPlayerConnect (player: alt.Player) {
-    this.addPlayer(player).catch(this.log.error)
+    this.addPlayer(player).catch((e) => {
+      if (e instanceof WSConnectTimeoutError) return
+      this.log.error("addPlayer error:", e.stack)
+    })
   }
 
   private onPlayerDisconnect (player: alt.Player) {

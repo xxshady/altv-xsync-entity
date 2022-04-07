@@ -15,7 +15,7 @@ export class InternalEntity {
     public readonly poolId: number,
     public readonly id: number,
     public _pos: alt.IVector3,
-    public readonly data: EntityData,
+    public readonly syncedMeta: EntityData,
     public readonly dimension: number,
     public readonly streamRange: number,
     public readonly migrationRange: number,

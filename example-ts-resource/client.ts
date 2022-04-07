@@ -10,7 +10,7 @@ new xsync.XSyncEntity()
 @xsync.onEntityEvents<Marker>({
   streamIn: (entity) => entity.streamIn(),
   streamOut: (entity) => entity.streamOut(),
-  dataChange: (entity, data) => entity.dataChange(data),
+  syncedMetaChange: (entity, syncedMeta) => entity.syncedMetaChange(syncedMeta),
   posChange: (entity, pos) => entity.posChange(pos),
 })
 class Marker extends xsync.Entity<IMarkerData> {
@@ -19,7 +19,7 @@ class Marker extends xsync.Entity<IMarkerData> {
   private streamIn(): void {
     this.render = alt.everyTick(() => {
       native.drawMarker(
-        this.data.type,
+        this.syncedMeta.type,
         this.pos.x, this.pos.y, this.pos.z,
         0, 0, 0,
         0, 0, 0,
@@ -40,8 +40,8 @@ class Marker extends xsync.Entity<IMarkerData> {
     alt.clearEveryTick(this.render)
   }
 
-  private dataChange(data: Partial<IMarkerData>) {
-    alt.log("dataChange:", JSON.stringify(data, null, 2))
+  private syncedMetaChange(syncedMeta: Partial<IMarkerData>) {
+    alt.log("syncedMetaChange:~gl~", JSON.stringify(syncedMeta, null, 2))
   }
 
   public posChange(pos: alt.IVector3): void {

@@ -5,7 +5,7 @@ import { InternalEntity } from "../internal-entity"
 import { InternalXSyncEntity } from "../internal-xsync-entity"
 import { valid } from "./decorators"
 
-export class Entity<TData extends EntityData = EntityData> {
+export class Entity<TSyncedMeta extends EntityData = EntityData, TMeta extends EntityData = EntityData> {
   public static get all (): Entity[] {
     return Object.values(InternalEntity.all).map(e => e.publicInstance)
   }
@@ -21,7 +21,8 @@ export class Entity<TData extends EntityData = EntityData> {
   private readonly internalInstance: InternalEntity
   private _valid = true
 
-  private readonly _data: TData
+  private readonly _syncedMeta: TSyncedMeta
+  private readonly _meta: TMeta
   public readonly dimension: number
   public readonly streamRange: number
   public readonly migrationRange: number
@@ -29,7 +30,8 @@ export class Entity<TData extends EntityData = EntityData> {
   constructor (
     public readonly pool: EntityPool,
     private _pos: alt.IVector3,
-    data = {} as TData,
+    syncedMeta = {} as TSyncedMeta,
+    meta = {} as TMeta,
     dimension = 0,
     streamRange = 300,
     migrationRange = streamRange / 2,
@@ -39,16 +41,17 @@ export class Entity<TData extends EntityData = EntityData> {
       pool.id,
       this.id,
       _pos,
-      data,
+      syncedMeta,
       dimension,
       streamRange,
       migrationRange,
     )
 
-    this._data = data
+    this._syncedMeta = syncedMeta
     this.dimension = dimension
     this.streamRange = streamRange
     this.migrationRange = migrationRange
+    this._meta = meta
   }
 
   public get valid (): boolean {
@@ -65,8 +68,12 @@ export class Entity<TData extends EntityData = EntityData> {
     this._pos = value
   }
 
-  public get data (): Readonly<TData> {
-    return this.data
+  public get syncedMeta (): Readonly<TSyncedMeta> {
+    return this._syncedMeta
+  }
+
+  public get meta (): Readonly<TMeta> {
+    return this._meta
   }
 
   @valid()
@@ -78,11 +85,18 @@ export class Entity<TData extends EntityData = EntityData> {
   }
 
   @valid()
-  public updateData (value: Partial<TData>): void {
+  public setSyncedMeta (value: Partial<TSyncedMeta>): void {
     for (const key in value) {
-      this._data[key as keyof TData] = value[key as keyof TData] as TData[keyof TData]
+      this._syncedMeta[key as keyof TSyncedMeta] = value[key as keyof TSyncedMeta] as TSyncedMeta[keyof TSyncedMeta]
     }
 
-    InternalXSyncEntity.instance.updateEntityData(this.internalInstance, value)
+    InternalXSyncEntity.instance.updateEntitySyncedMeta(this.internalInstance, value)
+  }
+
+  @valid()
+  public setMeta (value: Partial<TMeta>): void {
+    for (const key in value) {
+      this._meta[key as keyof TMeta] = value[key as keyof TMeta] as TMeta[keyof TMeta]
+    }
   }
 }

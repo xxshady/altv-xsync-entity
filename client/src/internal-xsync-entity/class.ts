@@ -42,7 +42,7 @@ export class InternalXSyncEntity {
       this.log.log(`stream in: ${entities.length}`)
 
       for (let i = 0; i < entities.length; i++) {
-        const [poolId, entityId, pos, data] = entities[i]
+        const [poolId, entityId, pos, syncedMeta] = entities[i]
         const entityPool = this.entityPools[poolId]
 
         if (!entityPool) {
@@ -57,7 +57,7 @@ export class InternalXSyncEntity {
         const entity = new entityPool.EntityClass(
           entityId,
           posVector3,
-          data,
+          syncedMeta,
         )
 
         entityPool.streamInEntity(entity)
@@ -115,11 +115,11 @@ export class InternalXSyncEntity {
       entity.posChange(WSVectors.WStoAlt(pos))
     },
 
-    [WSClientOnServerEvents.EntityDataChange]: (entityId, data) => {
+    [WSClientOnServerEvents.EntitySyncedMetaChange]: (entityId, syncedMeta) => {
       const entity = InternalEntityPool.entities[entityId]
       if (!entity) return
 
-      entity.dataChange(data)
+      entity.syncedMetaChange(syncedMeta)
     },
   }
 

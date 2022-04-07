@@ -60,7 +60,7 @@ export class InternalEntity<T extends EntityData = EntityData> {
     public readonly publicInstance: Entity,
     public readonly id: number,
     public pos: alt.IVector3,
-    public readonly data: T,
+    public readonly syncedMeta: T,
   ) {
     // TODO: make public Entity constructor private and remove this shit
     if (!InternalEntity.reservedEntities[id]) {
@@ -84,10 +84,10 @@ export class InternalEntity<T extends EntityData = EntityData> {
     InternalEntity.handleEvent(this, "posChange", pos)
   }
 
-  public dataChange (data: Partial<T>): void {
-    for (const key in data) {
-      this.data[key as keyof T] = data[key as keyof T] as T[keyof T]
+  public syncedMetaChange (syncedMeta: Partial<T>): void {
+    for (const key in syncedMeta) {
+      this.syncedMeta[key as keyof T] = syncedMeta[key as keyof T] as T[keyof T]
     }
-    InternalEntity.handleEvent(this, "dataChange", data)
+    InternalEntity.handleEvent(this, "syncedMetaChange", syncedMeta)
   }
 }

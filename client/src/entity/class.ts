@@ -16,9 +16,9 @@ export abstract class Entity<T extends EntityData = EntityData> {
   constructor (
     public readonly id: number,
     pos: alt.IVector3,
-    data: Readonly<T>,
+    syncedMeta: Readonly<T>,
   ) {
-    this.internalInstance = new InternalEntity<T>(this, id, pos, data)
+    this.internalInstance = new InternalEntity<T>(this, id, pos, syncedMeta)
   }
 
   public get pos (): alt.IVector3 {
@@ -29,7 +29,7 @@ export abstract class Entity<T extends EntityData = EntityData> {
     return this.internalInstance.netOwnered
   }
 
-  public get data (): Readonly<T> {
-    return this.internalInstance.data
+  public get syncedMeta (): Readonly<T> {
+    return this.internalInstance.syncedMeta
   }
 }

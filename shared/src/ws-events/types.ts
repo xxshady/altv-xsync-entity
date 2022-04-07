@@ -9,7 +9,7 @@ export type WSEntityCreate = [
    */
   poolId: number, entityId: number,
   pos: WSVector3,
-  data: EntityData,
+  syncedMeta: EntityData,
 ]
 
 export type WSEntityNetOwner = [entityId: number, isClientNetOwner: 1 | 0]

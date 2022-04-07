@@ -5,7 +5,7 @@ export interface IEntityEventHandlers<T extends Entity = Entity> {
   streamIn: (entity: T) => void
   streamOut: (entity: T) => void
   posChange?: (entity: T, pos: alt.IVector3) => void
-  dataChange?: (entity: T, data: Partial<Entity["data"]>) => void
+  syncedMetaChange?: (entity: T, syncedMeta: Partial<Entity["syncedMeta"]>) => void
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

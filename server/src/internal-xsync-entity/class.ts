@@ -110,12 +110,12 @@ export class InternalXSyncEntity {
     )
   }
 
-  public updateEntityData (entity: InternalEntity, data: Record<string, unknown>): void {
+  public updateEntitySyncedMeta (entity: InternalEntity, syncedMeta: Record<string, unknown>): void {
     this.emitWSStreamedPlayers(
       entity,
-      WSClientOnServerEvents.EntityDataChange,
+      WSClientOnServerEvents.EntitySyncedMetaChange,
       entity.id,
-      data,
+      syncedMeta,
     )
   }
 
@@ -249,13 +249,13 @@ export class InternalXSyncEntity {
         poolId,
         id,
         pos,
-        data,
+        syncedMeta,
       }) =>
       [
         poolId,
         id,
         WSVectors.altToWS(pos),
-        data,
+        syncedMeta,
       ])
   }
 

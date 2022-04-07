@@ -47,6 +47,7 @@ class Marker extends Entity<IMarkerData> {
       markersPool,
       pos,
       { type },
+      {},
       0,
       10,
     )
@@ -68,5 +69,5 @@ const marker = new Marker(
   2,
 )
 
-// this will send updated partial data to the client in "dataChange" event
-marker.updateData({ type: 5 })
+// this will send updated partial synced meta to the client in "syncedMetaChange" event
+marker.setSyncedMeta({ type: 5 })

@@ -10,10 +10,10 @@ export class Entity<TData extends EntityData = EntityData> {
     return Object.values(InternalEntity.all).map(e => e.publicInstance)
   }
 
-  public static getByID (id: number): Entity | null {
-    const entity = InternalEntity.all[id]
-
-    return entity ? entity.publicInstance : null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public static getByID<T extends new (...args: any) => Entity> (this: T, id: number): InstanceType<T> | null {
+    const entity = InternalEntity.all[id]?.publicInstance as InstanceType<T>
+    return (entity instanceof this) ? entity : null
   }
 
   public readonly id = InternalXSyncEntity.instance.idProvider.getNext()

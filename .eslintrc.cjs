@@ -105,6 +105,7 @@ module.exports = {
       'classes': true, 
       'variables': true
     }],
+    'brace-style': ['error', 'stroustrup']
   },
   ignorePatterns: [
     '.eslintrc.cjs',

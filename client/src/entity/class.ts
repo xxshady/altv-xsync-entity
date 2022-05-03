@@ -32,4 +32,8 @@ export abstract class Entity<T extends EntityData = EntityData> {
   public get syncedMeta (): Readonly<T> {
     return this.internalInstance.syncedMeta
   }
+
+  public get streamed (): boolean {
+    return this.internalInstance.streamed
+  }
 }

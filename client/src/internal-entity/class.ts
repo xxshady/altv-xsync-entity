@@ -55,6 +55,7 @@ export class InternalEntity<T extends EntityData = EntityData> {
   }
 
   public netOwnered = false
+  public streamed = true
 
   constructor (
     public readonly publicInstance: Entity,
@@ -76,6 +77,7 @@ export class InternalEntity<T extends EntityData = EntityData> {
   }
 
   public streamOut (): void {
+    this.streamed = false
     InternalEntity.handleEvent(this, "streamOut")
   }
 

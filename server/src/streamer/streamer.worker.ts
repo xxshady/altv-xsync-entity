@@ -365,31 +365,6 @@ class StreamerWorker {
 
     const entities = this.entitiesArray
 
-    // TODO fix it for netowners & dynamic entity pos change
-    // if (!this.netOwnerLogicEnabled) {
-    //   if (!this.entitiesSizeBigger && oldDimension === dimension && oldPos.x === pos.x && oldPos.y === pos.y) {
-    //     // this.log.log("old pos & dimension && entities size, skip distance checks")
-
-    //     for (let i = 0; i < entities.length; i++) {
-    //       const entity = entities[i]
-
-    //       if (dimension === entity.dimension) continue
-
-    //       this.streamOutEntityPlayer(
-    //         playerId, entity, streamedEntityIds, streamOutIds,
-    //         netOwnerChanges, owneredEntityIds,
-    //       )
-
-    //       entity.dist = Infinity
-    //     }
-
-    //     return {
-    //       streamIn: streamInIds,
-    //       streamOut: streamOutIds,
-    //     }
-    //   }
-    // }
-
     for (let i = 0; i < entities.length; i++) {
       const entity = entities[i]
 

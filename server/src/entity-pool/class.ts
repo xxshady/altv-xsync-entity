@@ -2,6 +2,7 @@ import { InternalXSyncEntity } from "../internal-xsync-entity"
 import type { IEntityPoolOptions } from "./types"
 
 export class EntityPool {
+  private static readonly pools: Record<number, EntityPool> = {}
   private _maxStreamedIn: number
 
   constructor (
@@ -10,8 +11,11 @@ export class EntityPool {
       maxStreamedIn = 150,
     }: Partial<IEntityPoolOptions>,
   ) {
-    this._maxStreamedIn = maxStreamedIn
+    if (EntityPool.pools[id]) {
+      throw new Error(`xsync.EntityPool id: ${id} already taken`)
+    }
 
+    this._maxStreamedIn = maxStreamedIn
     InternalXSyncEntity.instance.streamer.addPool(this)
   }
 

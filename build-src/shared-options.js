@@ -22,6 +22,7 @@ export const getSharedBuildOptions = ({ argv }) => {
   } 
 }
 
+// TODO fix child.kill()
 export const typesGenerator = () => 
   (error, result) => {
     if (error) return

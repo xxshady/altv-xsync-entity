@@ -90,4 +90,8 @@ export class InternalEntity<T extends EntityData = EntityData> {
     }
     InternalEntity.handleEvent(this, "syncedMetaChange", syncedMeta)
   }
+
+  public netOwnerChange (isLocalPlayerNetOwner: boolean): void {
+    InternalEntity.handleEvent(this, "netOwnerChange", isLocalPlayerNetOwner)
+  }
 }

@@ -6,6 +6,7 @@ export interface IEntityEventHandlers<T extends Entity = Entity> {
   streamOut: (entity: T) => void
   posChange?: (entity: T, pos: alt.IVector3) => void
   syncedMetaChange?: (entity: T, syncedMeta: Partial<Entity["syncedMeta"]>) => void
+  netOwnerChange?: (entity: T, isLocalPlayerNetOwner: boolean) => void
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -87,10 +87,6 @@ export class InternalXSyncEntity {
     },
 
     [WSClientOnServerEvents.EntitiesNetOwnerChange]: (entities) => {
-      const { netOwnerChangeHandler } = this
-
-      if (!netOwnerChangeHandler) return
-
       for (let i = 0; i < entities.length; i++) {
         const [entityId, isLocalPlayerNetOwner] = entities[i]
         const entity = InternalEntityPool.entities[entityId]
@@ -100,6 +96,7 @@ export class InternalXSyncEntity {
         const netOwnered = !!isLocalPlayerNetOwner
 
         entity.netOwnered = netOwnered
+        entity.netOwnerChange(netOwnered)
 
         if (netOwnered) {
           this.netOwneredEntityIds.add(entityId)

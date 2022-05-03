@@ -15,7 +15,8 @@ export class InternalEntityPool {
 
     if (typeof entityOrId === "number") {
       entity = this.entities[entityOrId]
-    } else {
+    }
+    else {
       entity = entityOrId
     }
 

@@ -97,13 +97,15 @@ export class Streamer {
 
               this.removeStreamEntityPlayerLink(+playerId, entityId)
               streamOutEntities.push(entity)
-            } catch (e) {
+            }
+            catch (e) {
               this.log.error(e)
             }
           }
 
           this.onEntitiesStreamOut(player, streamOutEntities)
-        } catch (e) {
+        }
+        catch (e) {
           this.log.error(e)
         }
       }
@@ -135,7 +137,8 @@ export class Streamer {
           }
 
           this.onEntitiesStreamIn(player, streamInEntities)
-        } catch (e) {
+        }
+        catch (e) {
           this.log.error(e)
         }
       }
@@ -175,9 +178,11 @@ export class Streamer {
 
         if (oldNetOwnerId === null) {
           oldNetOwner = null
-        } else if (removedPlayerIds[oldNetOwnerId as unknown as string]) {
+        }
+        else if (removedPlayerIds[oldNetOwnerId as unknown as string]) {
           oldNetOwner = null
-        } else {
+        }
+        else {
           oldNetOwner = players[oldNetOwnerId] ?? null
         }
 
@@ -192,7 +197,8 @@ export class Streamer {
           this.log.warn(`[netOwnerChange] newNetOwner disconnected: ${newNetOwnerId}`)
           netOwnerChanges.push([entity, oldNetOwner, null])
           continue
-        } else {
+        }
+        else {
           newNetOwner = players[newNetOwnerId]
         }
 
@@ -332,7 +338,8 @@ export class Streamer {
           // fuck typescript complaints, i know what im doing
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           handler(...data as [firstArg: any, secondArg?: any])
-        } catch (e) {
+        }
+        catch (e) {
           this.log.error("error in handler from worker event")
           this.log.error(e)
         }
@@ -389,7 +396,8 @@ export class Streamer {
         Object.keys(removedPlayerIds),
       )
       this.startCurrentPlayersUpdate()
-    } catch (e) {
+    }
+    catch (e) {
       this.log.error(e)
     }
   }

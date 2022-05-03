@@ -101,7 +101,8 @@ export class InternalXSyncEntity {
         if (netOwnered) {
           this.netOwneredEntityIds.add(entityId)
           this.netOwnerChangeHandler?.(entity.publicInstance, netOwnered)
-        } else this.removeNetOwneredEntity(entity)
+        }
+        else this.removeNetOwneredEntity(entity)
       }
     },
 
@@ -157,7 +158,8 @@ export class InternalXSyncEntity {
       const port = serverUrl.slice(serverUrl.indexOf(":") + 1)
 
       fullServerUrl = `ws://${getServerIp()}:${port}`
-    } else {
+    }
+    else {
       fullServerUrl = `${serverUrl}`
     }
 
@@ -178,7 +180,8 @@ export class InternalXSyncEntity {
     for (const entityId in InternalEntityPool.entities) {
       try {
         InternalEntityPool.entities[entityId]?.streamOut()
-      } catch (e) {
+      }
+      catch (e) {
         this.log.error(e)
       }
     }

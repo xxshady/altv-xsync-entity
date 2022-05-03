@@ -37,7 +37,8 @@ export class MessageEventsManager<T extends Events = Events> {
       const args = JSON.parse(rawArgs)
 
       handler(...extraFirstArgs, ...args)
-    } catch (e) {
+    }
+    catch (e) {
       this.log.error("[receive]")
       this.log.error(e)
     }

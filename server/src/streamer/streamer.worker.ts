@@ -415,7 +415,8 @@ class StreamerWorker {
             origEntity.netOwnerDist = Infinity
             arrEntity.netOwnerId = null
             arrEntity.netOwnerDist = Infinity
-          } else {
+          }
+          else {
             origEntity.netOwnerDist = dist
             arrEntity.netOwnerDist = dist
           }
@@ -435,7 +436,8 @@ class StreamerWorker {
         if (netOwnerId !== playerId && dist < migrationRange && netOwnerDist > migrationRange) {
           if (owneredEntityIds.has(id)) {
             this.log.error(`player: ${playerId} already net owner of entity: ${id}`)
-          } else {
+          }
+          else {
             // this.log.log(`set net owner entity: ${entity.id} player: ${playerId}`)
             const entity = this.entities[id]
 
@@ -452,10 +454,12 @@ class StreamerWorker {
 
               if (netOwnerChange[0] == null) {
                 this.log.error(`oldNetOwner is null netOwnerChange null to oldNetOwner entity: ${id} newNetOwner: ${playerId}`)
-              } else {
+              }
+              else {
                 netOwnerChange[1] = playerId
               }
-            } else {
+            }
+            else {
               netOwnerChange = [netOwnerId, playerId]
             }
             netOwnerChanges[id] = netOwnerChange
@@ -526,7 +530,8 @@ class StreamerWorker {
       if (entity.netOwnerId === playerId) {
         if (!owneredEntityIds.delete(entityId)) {
           this.log.error(`player: ${playerId} already NOT net owner of entity: ${entityId}`)
-        } else {
+        }
+        else {
           netOwnerChanges[entityId] = [playerId, null]
           entity.netOwnerId = null
           entity.netOwnerDist = Infinity

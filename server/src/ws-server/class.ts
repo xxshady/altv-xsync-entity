@@ -54,7 +54,8 @@ export class WSServer {
         cert: fs.readFileSync(certPath),
         key: fs.readFileSync(keyPath),
       })
-    } else {
+    }
+    else {
       this.log.log("init ws (HTTP) server")
       server = new http.Server()
     }
@@ -131,7 +132,8 @@ export class WSServer {
 
     try {
       playerData.socket?.close()
-    } catch (e) {}
+    }
+    catch (e) {}
 
     this.players.delete(player.id)
   }

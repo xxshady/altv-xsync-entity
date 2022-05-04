@@ -18,7 +18,8 @@ export type RawClientMessageHandler = (player: alt.Player, message: Buffer) => v
 export type SocketCloseHandler = (player: alt.Player) => void
 
 export interface IWebSocketServerOptions {
-  events: Record<string, (player: alt.Player, ...args: unknown[]) => void>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  events: Record<string, (player: alt.Player, ...args: any[]) => void>
   certPath: string
   keyPath: string
   useWss?: boolean

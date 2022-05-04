@@ -2,8 +2,10 @@ import * as alt from "alt-client"
 import type {
   IClientOnServerEvent,
   IWSClientOnServerEvent,
+  IWSServerOnClientEvent,
 } from "altv-xsync-entity-shared"
 import {
+  WSServerOnClientEvents,
   WSVectors,
   ClientOnServerEvents,
   WSClientOnServerEvents,
@@ -14,6 +16,7 @@ import { InternalEntityPool } from "../internal-entity-pool"
 import { getServerIp } from "../utils/get-server-ip"
 import type { INetOwnerLogicOptions } from "../xsync-entity/types"
 import { InternalEntity } from "../internal-entity"
+import type { Entity as PublicEntity } from "../entity"
 
 export class InternalXSyncEntity {
   // TODO move in shared
@@ -95,12 +98,11 @@ export class InternalXSyncEntity {
 
         const netOwnered = !!isLocalPlayerNetOwner
 
-        entity.netOwnered = netOwnered
         entity.netOwnerChange(netOwnered)
+        this.netOwnerChangeHandler?.(entity.publicInstance, netOwnered)
 
         if (netOwnered) {
           this.netOwneredEntityIds.add(entityId)
-          this.netOwnerChangeHandler?.(entity.publicInstance, netOwnered)
         }
         else this.removeNetOwneredEntity(entity)
       }
@@ -143,10 +145,28 @@ export class InternalXSyncEntity {
     this.entityPools[pool.id] = pool
   }
 
+  public updateNetOwnerSyncedMeta<T extends PublicEntity> (entity: T, meta: Partial<T["syncedMeta"]>): void {
+    this.emitWSServer(WSServerOnClientEvents.UpdateEntitySyncedMeta, entity.id, meta)
+  }
+
+  public updateNetOwnerPos<T extends PublicEntity> (entity: T, pos: alt.IVector3): void {
+    this.emitWSServer(WSServerOnClientEvents.UpdateEntityPos, entity.id, WSVectors.altToWS(pos))
+  }
+
   private setupAltvEvents () {
     alt.onServer(
       ClientOnServerEvents.AddPlayer,
       this.onAddPlayer.bind(this) as IClientOnServerEvent[ClientOnServerEvents.AddPlayer],
+    )
+  }
+
+  private emitWSServer <K extends WSServerOnClientEvents> (
+    eventName: K,
+    ...args: Parameters<IWSServerOnClientEvent[K]>
+  ) {
+    this.ws?.send(
+      eventName.toString(),
+      ...args,
     )
   }
 
@@ -188,7 +208,6 @@ export class InternalXSyncEntity {
   }
 
   private removeNetOwneredEntity (entity: InternalEntity) {
-    if (!this.netOwneredEntityIds.delete(entity.id)) return
-    this.netOwnerChangeHandler?.(entity.publicInstance, false)
+    this.netOwneredEntityIds.delete(entity.id)
   }
 }

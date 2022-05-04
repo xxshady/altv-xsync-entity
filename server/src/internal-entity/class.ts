@@ -7,8 +7,9 @@ import type { InternalEntityDict } from "./types"
 
 export class InternalEntity {
   public static readonly all: Readonly<InternalEntityDict> = {}
-
   private static readonly log = createLogger("xsync:internal-entity")
+
+  public netOwner: alt.Player | null = null
 
   constructor (
     public readonly publicInstance: Entity,
@@ -28,14 +29,31 @@ export class InternalEntity {
     return this._pos
   }
 
+  // used for public api Entity class
   public set pos (value: alt.IVector3) {
     this._pos = value
-
     InternalXSyncEntity.instance.updateEntityPos(this)
   }
 
   public destroy (): void {
     delete (InternalEntity.all as InternalEntityDict)[this.id]
     InternalXSyncEntity.instance.removeEntity(this)
+  }
+
+  public netOwnerSyncedMetaUpdate (syncedMeta: EntityData): void {
+    Object.assign(this.syncedMeta, syncedMeta)
+  }
+
+  public netOwnerPosUpdate (pos: alt.IVector3): void {
+    this._pos = pos
+  }
+
+  public netOwnerChange (newNetOwner: alt.Player | null): void {
+    this.netOwner = newNetOwner
+  }
+
+  public setSyncedMeta (syncedMeta: Partial<EntityData>): void {
+    Object.assign(this.syncedMeta, syncedMeta)
+    InternalXSyncEntity.instance.updateEntitySyncedMeta(this, syncedMeta)
   }
 }

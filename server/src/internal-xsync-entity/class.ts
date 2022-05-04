@@ -4,21 +4,24 @@ import { WSConnectTimeoutError, WSServer } from "../ws-server"
 import { Streamer } from "../streamer"
 import type {
   IWSClientOnServerEvent,
+  IWSServerOnClientEvent,
   WSEntityCreate,
   WSEntityNetOwner,
 } from "altv-xsync-entity-shared"
 import {
+  WSServerOnClientEvents,
   WSVectors,
   ClientOnServerEvents,
   WSClientOnServerEvents,
 } from "altv-xsync-entity-shared"
 import { Players } from "../players"
 import { createLogger } from "altv-xlogger"
-import type { InternalEntity } from "../internal-entity"
+import { InternalEntity } from "../internal-entity"
 import type {
   INetOwnerLogicOptions,
   IWSSOptions,
 } from "../xsync-entity/types"
+import type { FirstPlayerParamToInterface } from "../utils/types"
 
 export class InternalXSyncEntity {
   // TODO move in shared
@@ -43,6 +46,26 @@ export class InternalXSyncEntity {
   private readonly wsServerUrl: string
 
   private readonly netOwnerChangeHandler: INetOwnerLogicOptions["entityNetOwnerChange"]
+
+  private readonly WSEventHandlers: FirstPlayerParamToInterface<IWSServerOnClientEvent> = {
+    [WSServerOnClientEvents.UpdateEntitySyncedMeta]: (player, entityId, meta) => {
+      this.log.moreInfo("UpdateEntitySyncedMeta entity:", entityId, meta)
+
+      const entity = this.getEntityForNetOwner(player, entityId)
+      if (!entity) return
+
+      entity.netOwnerSyncedMetaUpdate(meta)
+      this.updateEntitySyncedMeta(entity, meta, player)
+    },
+
+    [WSServerOnClientEvents.UpdateEntityPos]: (player, entityId, pos) => {
+      const entity = this.getEntityForNetOwner(player, entityId)
+      if (!entity) return
+
+      entity.netOwnerPosUpdate(WSVectors.WStoAlt(pos))
+      this.updateEntityPos(entity, player)
+    },
+  }
 
   constructor (
     streamDelay: number,
@@ -69,7 +92,7 @@ export class InternalXSyncEntity {
     this.wss = new WSServer(
       port,
       {
-        events: {},
+        events: this.WSEventHandlers,
         certPath,
         keyPath,
         useWss,
@@ -99,27 +122,37 @@ export class InternalXSyncEntity {
     this.streamer.removeEntity(entity)
   }
 
-  public updateEntityPos (entity: InternalEntity): void {
+  public updateEntityPos (entity: InternalEntity, byNetOwner?: alt.Player): void {
     this.streamer.updateEntityPos(entity)
 
     this.emitWSStreamedPlayers(
       entity,
       WSClientOnServerEvents.EntityPosChange,
-      entity.id,
-      WSVectors.altToWS(entity.pos),
+      [
+        entity.id,
+        WSVectors.altToWS(entity.pos),
+      ],
+      byNetOwner,
     )
   }
 
-  public updateEntitySyncedMeta (entity: InternalEntity, syncedMeta: Record<string, unknown>): void {
+  public updateEntitySyncedMeta (entity: InternalEntity, syncedMeta: Record<string, unknown>, byNetOwner?: alt.Player): void {
     this.emitWSStreamedPlayers(
       entity,
       WSClientOnServerEvents.EntitySyncedMetaChange,
-      entity.id,
-      syncedMeta,
+      [
+        entity.id,
+        syncedMeta,
+      ],
+      byNetOwner,
     )
   }
 
-  private emitWSPlayer <K extends WSClientOnServerEvents> (player: alt.Player, eventName: K, ...args: Parameters<IWSClientOnServerEvent[K]>) {
+  private emitWSPlayer <K extends WSClientOnServerEvents> (
+    player: alt.Player,
+    eventName: K,
+    ...args: Parameters<IWSClientOnServerEvent[K]>
+  ) {
     this.wss.sendPlayer(
       player,
       eventName.toString(),
@@ -130,9 +163,10 @@ export class InternalXSyncEntity {
   private emitWSStreamedPlayers <K extends WSClientOnServerEvents> (
     entity: InternalEntity,
     eventName: K,
-    ...args: Parameters<IWSClientOnServerEvent[K]>
+    args: Parameters<IWSClientOnServerEvent[K]>,
+    excludeNetOwner?: alt.Player,
   ) {
-    const players = this.streamer.getEntityStreamedPlayers(entity)
+    const players = this.streamer.getEntityStreamedPlayers(entity, excludeNetOwner)
 
     for (let i = 0; i < players.length; i++) {
       this.emitWSPlayer(
@@ -231,6 +265,7 @@ export class InternalXSyncEntity {
         WSEntitiesData.set(newNetOwner, entities)
       }
 
+      entity.netOwnerChange(newNetOwner)
       this.netOwnerChangeHandler?.(entity.publicInstance, newNetOwner, oldNetOwner)
     }
 
@@ -275,5 +310,20 @@ export class InternalXSyncEntity {
 
         this.log.error("socket close", error.stack)
       })
+  }
+
+  private getEntityForNetOwner (netOwner: alt.Player, entityId: number): InternalEntity | null {
+    const entity = InternalEntity.all[entityId]
+    if (!entity) {
+      this.log.warn(`[OnClientEvents.UpdateEntitySyncedMeta] received invalid entityId: ${entityId}`)
+      return null
+    }
+
+    if (entity.netOwner !== netOwner) {
+      this.log.warn(`[OnClientEvents.UpdateEntitySyncedMeta] player is not netowner (${netOwner.id}) of entityId: ${entityId}`)
+      return null
+    }
+
+    return entity
   }
 }

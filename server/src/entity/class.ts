@@ -21,7 +21,6 @@ export class Entity<TSyncedMeta extends EntityData = EntityData, TMeta extends E
   private readonly internalInstance: InternalEntity
   private _valid = true
 
-  private readonly _syncedMeta: TSyncedMeta
   private readonly _meta: TMeta
   public readonly dimension: number
   public readonly streamRange: number
@@ -29,7 +28,7 @@ export class Entity<TSyncedMeta extends EntityData = EntityData, TMeta extends E
 
   constructor (
     public readonly pool: EntityPool,
-    private _pos: alt.IVector3,
+    _pos: alt.IVector3,
     syncedMeta = {} as TSyncedMeta,
     meta = {} as TMeta,
     dimension = 0,
@@ -47,7 +46,6 @@ export class Entity<TSyncedMeta extends EntityData = EntityData, TMeta extends E
       migrationRange,
     )
 
-    this._syncedMeta = syncedMeta
     this.dimension = dimension
     this.streamRange = streamRange
     this.migrationRange = migrationRange
@@ -59,21 +57,24 @@ export class Entity<TSyncedMeta extends EntityData = EntityData, TMeta extends E
   }
 
   public get pos (): alt.IVector3 {
-    return this._pos
+    return this.internalInstance.pos
   }
 
   @valid()
   public set pos (value: alt.IVector3) {
     this.internalInstance.pos = value
-    this._pos = value
   }
 
   public get syncedMeta (): Readonly<TSyncedMeta> {
-    return this._syncedMeta
+    return this.internalInstance.syncedMeta as Readonly<TSyncedMeta>
   }
 
   public get meta (): Readonly<TMeta> {
     return this._meta
+  }
+
+  public get netOwner (): alt.Player | null {
+    return this.internalInstance.netOwner
   }
 
   @valid()
@@ -86,11 +87,7 @@ export class Entity<TSyncedMeta extends EntityData = EntityData, TMeta extends E
 
   @valid()
   public setSyncedMeta (value: Partial<TSyncedMeta>): void {
-    for (const key in value) {
-      this._syncedMeta[key as keyof TSyncedMeta] = value[key as keyof TSyncedMeta] as TSyncedMeta[keyof TSyncedMeta]
-    }
-
-    InternalXSyncEntity.instance.updateEntitySyncedMeta(this.internalInstance, value)
+    this.internalInstance.setSyncedMeta(value)
   }
 
   @valid()

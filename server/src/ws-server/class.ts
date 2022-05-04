@@ -309,7 +309,7 @@ export class WSServer {
 
     // this.log.log("[onSocketMessage]", new Date().getMilliseconds())
 
-    this.log.log("[onSocketMessage]", `player: ${player.id}`, "type:", data?.constructor?.name ?? typeof data, "data:")
+    // this.log.log("[onSocketMessage]", `player: ${player.id}`, "type:", data?.constructor?.name ?? typeof data, "data:")
     // console.debug(data, "bytes:", data.byteLength, Array.from(data as Buffer), data.toString())
 
     // socket.send("ok")

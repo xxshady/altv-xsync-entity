@@ -283,7 +283,7 @@ export class Streamer {
     )
   }
 
-  public getEntityStreamedPlayers ({ id }: InternalEntity): alt.Player[] {
+  public getEntityStreamedPlayers ({ id }: InternalEntity, excludeNetOwner?: alt.Player): alt.Player[] {
     const playerIds = this.entitiesStreamedPlayerIds[id]
     const players: alt.Player[] = []
     const { removedPlayerIds } = this.currentPlayersUpdate
@@ -297,6 +297,7 @@ export class Streamer {
 
       if (!player) continue
       if (removedPlayerIds[playerId]) continue
+      if (player === excludeNetOwner) continue
 
       players.push(player)
     }

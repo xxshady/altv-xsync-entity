@@ -51,7 +51,7 @@ export class InternalEntity<T extends EntityData = EntityData> {
 
     // shut up stupid ts
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    handler(entity.publicInstance, ...args as [arg0?: any])
+    handler(entity.publicInstance, ...args as [first?: any])
   }
 
   public netOwnered = false
@@ -78,6 +78,7 @@ export class InternalEntity<T extends EntityData = EntityData> {
 
   public streamOut (): void {
     this.streamed = false
+    this.netOwnered = false
     InternalEntity.handleEvent(this, "streamOut")
   }
 
@@ -87,13 +88,12 @@ export class InternalEntity<T extends EntityData = EntityData> {
   }
 
   public syncedMetaChange (syncedMeta: Partial<T>): void {
-    for (const key in syncedMeta) {
-      this.syncedMeta[key as keyof T] = syncedMeta[key as keyof T] as T[keyof T]
-    }
+    Object.assign(this.syncedMeta, syncedMeta)
     InternalEntity.handleEvent(this, "syncedMetaChange", syncedMeta)
   }
 
   public netOwnerChange (isLocalPlayerNetOwner: boolean): void {
+    this.netOwnered = isLocalPlayerNetOwner
     InternalEntity.handleEvent(this, "netOwnerChange", isLocalPlayerNetOwner)
   }
 }

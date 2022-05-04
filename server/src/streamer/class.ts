@@ -58,14 +58,14 @@ export class Streamer {
         removedPlayerIds,
       } = this.currentPlayersUpdate
 
-      if (Object.keys(playersInEntities).length > 0) {
-        this.log.log("[streamIn]")
-        this.log.moreInfo(playersInEntities)
-      }
-      if (Object.keys(playersOutEntities).length > 0) {
-        this.log.log("[streamOut]")
-        this.log.moreInfo(playersOutEntities)
-      }
+      // if (Object.keys(playersInEntities).length > 0) {
+      //   this.log.log("[streamIn]")
+      //   this.log.moreInfo(playersInEntities)
+      // }
+      // if (Object.keys(playersOutEntities).length > 0) {
+      //   this.log.log("[streamOut]")
+      //   this.log.moreInfo(playersOutEntities)
+      // }
 
       // TODO: refactor this shit
 

@@ -1,5 +1,7 @@
 import { createLogger } from "altv-xlogger"
 import type { Events } from "./types"
+// import * as alt from "alt-shared"
+// import { WSClientOnServerEvents, WSServerOnClientEvents } from "../ws-events"
 
 export class MessageEventsManager<T extends Events = Events> {
   private readonly log = createLogger("xsync:message-manager")
@@ -35,6 +37,13 @@ export class MessageEventsManager<T extends Events = Events> {
       }
 
       const args = JSON.parse(rawArgs)
+
+      // this.log.moreInfo(
+      //   "[receive]",
+      //   "eventName:",
+      //   alt.isClient ? WSClientOnServerEvents[eventName as any] : WSServerOnClientEvents[eventName as any],
+      //   args,
+      // )
 
       handler(...extraFirstArgs, ...args)
     }

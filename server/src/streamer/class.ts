@@ -53,21 +53,21 @@ export class Streamer {
     ) => {
       const players = InternalXSyncEntity.instance.players.dict
       const entities = InternalEntity.all
-      const streamInEntities: InternalEntity[] = []
-      const streamOutEntities: InternalEntity[] = []
       const {
         removedEntityIds,
         removedPlayerIds,
       } = this.currentPlayersUpdate
 
-      // if (Object.keys(playersInEntities).length > 0) {
-      //   this.log.log("[streamIn]")
-      //   this.log.moreInfo(playersInEntities)
-      // }
-      // if (Object.keys(playersOutEntities).length > 0) {
-      //   this.log.log("[streamOut]")
-      //   this.log.moreInfo(playersOutEntities)
-      // }
+      if (Object.keys(playersInEntities).length > 0) {
+        this.log.log("[streamIn]")
+        this.log.moreInfo(playersInEntities)
+      }
+      if (Object.keys(playersOutEntities).length > 0) {
+        this.log.log("[streamOut]")
+        this.log.moreInfo(playersOutEntities)
+      }
+
+      // TODO: refactor this shit
 
       for (const playerId in playersOutEntities) {
         try {
@@ -79,6 +79,8 @@ export class Streamer {
           if (!player) {
             throw new Error(`[xsync-entity:streamer] non exist player id: ${playerId}`)
           }
+
+          const streamOutEntities: InternalEntity[] = []
 
           for (let i = 0; i < entityIds.length; i++) {
             try {
@@ -120,6 +122,8 @@ export class Streamer {
           if (!player) {
             throw new Error(`[xsync-entity:streamer] non exist player id: ${playerId}`)
           }
+
+          const streamInEntities: InternalEntity[] = []
 
           for (let i = 0; i < entityIds.length; i++) {
             const entityId = entityIds[i]

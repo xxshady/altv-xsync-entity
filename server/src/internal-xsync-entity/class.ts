@@ -256,7 +256,7 @@ export class InternalXSyncEntity {
 
       if (oldNetOwner) {
         const entities = WSEntitiesData.get(oldNetOwner) ?? []
-        entities.push([entity.id, 0])
+        entities.push([entity.id, 0, entity.syncedMeta])
         WSEntitiesData.set(oldNetOwner, entities)
       }
       if (newNetOwner) {

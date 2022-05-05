@@ -14,4 +14,6 @@ export type WSEntityCreate = [
 
 export type WSBoolean = 1 | 0
 
-export type WSEntityNetOwner = [entityId: number, isClientNetOwner: WSBoolean]
+export type WSEntityNetOwner =
+  [entityId: number, isClientNetOwner: 0, syncedMeta: EntityData] |
+  [entityId: number, isClientNetOwner: 1]

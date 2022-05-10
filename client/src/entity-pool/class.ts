@@ -11,7 +11,11 @@ export class EntityPool <T extends Entity> {
     public readonly id: number,
     public readonly EntityClass: IEntityClass<T>,
   ) {
-    this.internal = new InternalEntityPool(id, EntityClass) as InternalEntityPool
+    this.internal = new InternalEntityPool(
+      id,
+      EntityClass,
+      this as unknown as EntityPool<Entity>,
+    ) as InternalEntityPool
   }
 
   public updateNetOwnerSyncedMeta (entity: Entity, syncedMeta: Partial<T["syncedMeta"]>): void {

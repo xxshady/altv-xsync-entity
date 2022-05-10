@@ -12,6 +12,26 @@ export abstract class Entity<T extends EntityData = EntityData> {
     return (entity instanceof this) ? entity : null
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public static updateNetOwnerPos<U extends new (...args: any) => Entity> (this: U, entity: InstanceType<U>, pos: alt.IVector3): void {
+    const entityPool = InternalEntityPool.getEntityPool(this)
+    if (!entityPool) return
+
+    entityPool.updateNetOwnerPos(entity, pos)
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public static updateNetOwnerSyncedMeta<U extends new (...args: any) => Entity> (
+    this: U,
+    entity: InstanceType<U>,
+    changedMeta: Partial<InstanceType<U>["syncedMeta"]>,
+  ): void {
+    const entityPool = InternalEntityPool.getEntityPool(this)
+    if (!entityPool) return
+
+    entityPool.updateNetOwnerSyncedMeta(entity, changedMeta)
+  }
+
   // TODO: make constructor private
   constructor (
     public readonly id: number,

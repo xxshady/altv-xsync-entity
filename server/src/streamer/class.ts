@@ -38,6 +38,7 @@ export class Streamer {
 
   private readonly entitiesStreamedPlayerIds: Record<Entity["id"], Set<PlayerId>> = {}
   private readonly playersStreamEntityIds: Record<PlayerId, Set<Entity["id"]>> = {}
+  private readonly entitiesDisabledNetOwner: Partial<Record<Entity["id"], true>> = {}
 
   private readonly entityCreateQueue: IEntityCreateQueue = {
     chunkSize: 3000,
@@ -173,6 +174,8 @@ export class Streamer {
           continue
         }
 
+        if (this.entitiesDisabledNetOwner[entityId]) continue
+
         if (newNetOwnerId === null && oldNetOwnerId === null) {
           netOwnerChanges.push([entity, null, null])
           continue
@@ -205,6 +208,8 @@ export class Streamer {
         else {
           newNetOwner = players[newNetOwnerId]
         }
+
+        if (newNetOwner === entity.netOwner) continue
 
         netOwnerChanges.push([entity, oldNetOwner, newNetOwner])
       }
@@ -264,7 +269,6 @@ export class Streamer {
     if (entityIdx !== -1) entities.splice(entityIdx, 1)
 
     const playerIds = this.deleteEntityStreamedPlayerIds(id)
-
     if (!playerIds) return
 
     for (const playerId of playerIds) {
@@ -307,6 +311,32 @@ export class Streamer {
     }
 
     return players
+  }
+
+  public setEntityNetOwner (entity: InternalEntity, player: alt.Player, disableMigration: boolean): void {
+    this.emitWorker(
+      StreamerWorkerEvents.SetEntityNetOwner,
+      entity.id,
+      player.id,
+      disableMigration,
+    )
+
+    if (disableMigration) {
+      this.entitiesDisabledNetOwner[entity.id] = true
+    }
+
+    if (entity.netOwner !== player) {
+      this.onEntityNetOwnerChange([[entity, entity.netOwner, player]])
+    }
+  }
+
+  public resetEntityNetOwner ({ id }: InternalEntity): void {
+    this.emitWorker(
+      StreamerWorkerEvents.ResetEntityNetOwner,
+      id,
+    )
+
+    delete this.entitiesDisabledNetOwner[id]
   }
 
   public removePlayer ({ id }: alt.Player): void {

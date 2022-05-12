@@ -1,8 +1,10 @@
 import * as alt from "alt-client"
 import type {
+  EntityData,
   IClientOnServerEvent,
   IWSClientOnServerEvent,
   IWSServerOnClientEvent,
+  WSBoolean,
 } from "altv-xsync-entity-shared"
 import {
   WSServerOnClientEvents,
@@ -16,7 +18,7 @@ import { InternalEntityPool } from "../internal-entity-pool"
 import { getServerIp } from "../utils/get-server-ip"
 import type { INetOwnerLogicOptions } from "../xsync-entity/types"
 import { InternalEntity } from "../internal-entity"
-import type { Entity as PublicEntity } from "../entity"
+import type { Entity, Entity as PublicEntity } from "../entity"
 
 export class InternalXSyncEntity {
   // TODO move in shared
@@ -45,7 +47,7 @@ export class InternalXSyncEntity {
       this.log.log(`stream in: ${entities.length}`)
 
       for (let i = 0; i < entities.length; i++) {
-        const [poolId, entityId, pos, syncedMeta] = entities[i]
+        const [poolId, entityId, pos, syncedMeta, netOwnered] = entities[i]
         const entityPool = this.entityPools[poolId]
 
         if (!entityPool) {
@@ -64,6 +66,10 @@ export class InternalXSyncEntity {
         )
 
         entityPool.streamInEntity(entity)
+
+        if (netOwnered) {
+          this.handleEntityNetOwnerChange(entity.id, netOwnered)
+        }
       }
     },
 
@@ -92,20 +98,7 @@ export class InternalXSyncEntity {
     [WSClientOnServerEvents.EntitiesNetOwnerChange]: (entities) => {
       for (let i = 0; i < entities.length; i++) {
         const [entityId, isLocalPlayerNetOwner, syncedMeta] = entities[i]
-        const entity = InternalEntityPool.entities[entityId]
-
-        if (!entity) continue
-
-        const netOwnered = !!isLocalPlayerNetOwner
-
-        syncedMeta && entity.syncedMetaChange(syncedMeta)
-        entity.netOwnerChange(netOwnered, syncedMeta)
-        this.netOwnerChangeHandler?.(entity.publicInstance, netOwnered)
-
-        if (netOwnered) {
-          this.netOwneredEntityIds.add(entityId)
-        }
-        else this.removeNetOwneredEntity(entity)
+        this.handleEntityNetOwnerChange(entityId, isLocalPlayerNetOwner, syncedMeta)
       }
     },
 
@@ -210,5 +203,21 @@ export class InternalXSyncEntity {
 
   private removeNetOwneredEntity (entity: InternalEntity) {
     this.netOwneredEntityIds.delete(entity.id)
+  }
+
+  private handleEntityNetOwnerChange (entityId: number, isLocalPlayerNetOwner?: WSBoolean, syncedMeta?: EntityData) {
+    const entity = InternalEntityPool.entities[entityId]
+    if (!entity) return
+
+    const netOwnered = !!isLocalPlayerNetOwner
+
+    syncedMeta && entity.syncedMetaChange(syncedMeta)
+    entity.netOwnerChange(netOwnered, syncedMeta)
+    this.netOwnerChangeHandler?.(entity.publicInstance, netOwnered)
+
+    if (netOwnered) {
+      this.netOwneredEntityIds.add(entity.id)
+    }
+    else this.removeNetOwneredEntity(entity)
   }
 }

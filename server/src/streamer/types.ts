@@ -16,6 +16,7 @@ export interface IStreamerWorkerEntity extends IStreamerWorkerCreateEntity {
   netOwnerId: PlayerId | null
   streamPlayerIds: Set<PlayerId>
   netOwnerDist: number
+  disabledMigration: boolean
   arrayIndex: number
 }
 

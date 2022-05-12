@@ -96,4 +96,14 @@ export class Entity<TSyncedMeta extends EntityData = EntityData, TMeta extends E
       this._meta[key as keyof TMeta] = value[key as keyof TMeta] as TMeta[keyof TMeta]
     }
   }
+
+  @valid()
+  public setNetOwner (netOwner: alt.Player, disableMigration = false): void {
+    this.internalInstance.setNetOwner(netOwner, disableMigration)
+  }
+
+  @valid()
+  public resetNetOwner (): void {
+    this.internalInstance.resetNetOwner()
+  }
 }

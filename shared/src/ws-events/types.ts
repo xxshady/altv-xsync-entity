@@ -10,6 +10,10 @@ export type WSEntityCreate = [
   poolId: number, entityId: number,
   pos: WSVector3,
   syncedMeta: EntityData,
+  /**
+   * used for entity.setNetOwner (disableMigration)
+   */
+  netOwnered?: WSBoolean,
 ]
 
 export type WSBoolean = 1 | 0

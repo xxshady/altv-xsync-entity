@@ -10,6 +10,7 @@ export class InternalEntity {
   private static readonly log = createLogger("xsync:internal-entity")
 
   public netOwner: alt.Player | null = null
+  public disabledMigration = false
 
   constructor (
     public readonly publicInstance: Entity,
@@ -55,5 +56,19 @@ export class InternalEntity {
   public setSyncedMeta (syncedMeta: Partial<EntityData>): void {
     Object.assign(this.syncedMeta, syncedMeta)
     InternalXSyncEntity.instance.updateEntitySyncedMeta(this, syncedMeta)
+  }
+
+  public setNetOwner (netOwner: alt.Player, disableMigration: boolean): void {
+    if (
+      this.netOwner === netOwner &&
+      this.disabledMigration === disableMigration
+    ) return
+    this.disabledMigration = disableMigration
+
+    InternalXSyncEntity.instance.setEntityNetOwner(this, netOwner, disableMigration)
+  }
+
+  public resetNetOwner (): void {
+    InternalXSyncEntity.instance.resetEntityNetOwner(this)
   }
 }

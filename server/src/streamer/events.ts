@@ -14,6 +14,8 @@ export enum StreamerWorkerEvents {
   PlayersUpdate,
   EnableNetOwnerLogic,
   SetEntityPos,
+  SetEntityNetOwner,
+  ResetEntityNetOwner,
 }
 
 export enum StreamerFromWorkerEvents {
@@ -42,6 +44,8 @@ export interface IStreamerWorkerEvent {
   [StreamerWorkerEvents.PlayersUpdate]: (players: PlayersUpdateData, removedPlayerIds: string[]) => void
   [StreamerWorkerEvents.EnableNetOwnerLogic]: () => void
   [StreamerWorkerEvents.SetEntityPos]: (entityId: number, pos: alt.IVector2) => void
+  [StreamerWorkerEvents.SetEntityNetOwner]: (entityId: number, playerId: number, disableMigration: boolean) => void
+  [StreamerWorkerEvents.ResetEntityNetOwner]: (entityId: number) => void
 }
 
 export type IStreamerSharedWorkerMessage<

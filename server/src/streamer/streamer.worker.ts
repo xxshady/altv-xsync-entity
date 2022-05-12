@@ -81,12 +81,13 @@ class StreamerWorker {
       for (let i = 0; i < entities.length; i++) {
         const entity = entities[i]
 
-        const newEntity = {
+        const newEntity: IStreamerWorkerEntity = {
           ...entity,
           netOwnerId: null,
           streamPlayerIds: new Set<number>(),
           netOwnerDist: Infinity,
           arrayIndex: -1,
+          disabledMigration: false,
         }
 
         this.entities[entity.id] = newEntity
@@ -262,6 +263,35 @@ class StreamerWorker {
       // TODO maybe add simple distance check here
       // for faster stream out or netowner migration
     },
+
+    [StreamerWorkerEvents.SetEntityNetOwner]: (entityId, playerId, disableMigration) => {
+      const entity = this.entities[entityId]
+      if (!entity) return
+      if (entity.netOwnerId === playerId && !disableMigration) return
+
+      const arrEntity = this.entitiesArray[entity.arrayIndex]
+      if (!arrEntity) {
+        throw new Error("[SetEntityNetOwner] no arr entity")
+      }
+
+      this.players[entity.netOwnerId as number]?.owneredEntityIds.delete(entityId)
+      this.players[playerId].owneredEntityIds.add(entityId)
+
+      arrEntity.netOwnerId = playerId
+      arrEntity.disabledMigration = disableMigration
+      arrEntity.netOwnerDist = 0
+      entity.netOwnerId = playerId
+      entity.disabledMigration = disableMigration
+      entity.netOwnerDist = 0
+    },
+
+    [StreamerWorkerEvents.ResetEntityNetOwner]: (entityId) => {
+      const entity = this.entities[entityId]
+      if (!entity?.disabledMigration) return
+
+      entity.disabledMigration = false
+      this.entitiesArray[entity.arrayIndex].disabledMigration = false
+    },
   }
 
   constructor () {
@@ -295,7 +325,7 @@ class StreamerWorker {
 
         // fuck typescript complaints, i know what im doing
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        handler(...data as [firstArg: any, secondArg?: any])
+        handler(...data as [firstArg: any, secondArg?: any, thirdArg?: any])
       },
     )
   }
@@ -344,6 +374,7 @@ class StreamerWorker {
       dist: Infinity,
       netOwnerDist: Infinity,
       arrayIndex,
+      disabledMigration: false,
     })
   }
 
@@ -400,12 +431,16 @@ class StreamerWorker {
         poolId,
         streamRange,
         migrationRange,
-        netOwnerId,
+        netOwnerId: currentNetOwnerId,
         netOwnerDist,
+        disabledMigration,
       } = arrEntity
 
       if (this.netOwnerLogicEnabled) {
-        if (netOwnerId === playerId) {
+        if (
+          !disabledMigration &&
+          currentNetOwnerId === playerId
+        ) {
           const origEntity = this.entities[id]
 
           if (dist > migrationRange) {
@@ -433,7 +468,14 @@ class StreamerWorker {
       }
 
       if (this.netOwnerLogicEnabled) {
-        if (netOwnerId !== playerId && dist < migrationRange && netOwnerDist > migrationRange) {
+        if (
+          !disabledMigration &&
+          (
+            currentNetOwnerId !== playerId &&
+            dist < migrationRange &&
+            netOwnerDist > migrationRange
+          )
+        ) {
           if (owneredEntityIds.has(id)) {
             this.log.error(`player: ${playerId} already net owner of entity: ${id}`)
           }
@@ -460,12 +502,12 @@ class StreamerWorker {
               }
             }
             else {
-              netOwnerChange = [netOwnerId, playerId]
+              netOwnerChange = [currentNetOwnerId, playerId]
             }
             netOwnerChanges[id] = netOwnerChange
 
-            if (netOwnerId != null) {
-              this.players[netOwnerId]?.owneredEntityIds.delete(id)
+            if (currentNetOwnerId != null) {
+              this.players[currentNetOwnerId]?.owneredEntityIds.delete(id)
             }
 
             entity.netOwnerId = playerId
@@ -527,6 +569,8 @@ class StreamerWorker {
     entity.streamPlayerIds.delete(playerId)
 
     if (this.netOwnerLogicEnabled) {
+      if (entity.disabledMigration) return
+
       if (entity.netOwnerId === playerId) {
         if (!owneredEntityIds.delete(entityId)) {
           this.log.error(`player: ${playerId} already NOT net owner of entity: ${entityId}`)

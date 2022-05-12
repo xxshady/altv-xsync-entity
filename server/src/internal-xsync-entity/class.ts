@@ -5,6 +5,7 @@ import { Streamer } from "../streamer"
 import type {
   IWSClientOnServerEvent,
   IWSServerOnClientEvent,
+  WSBoolean,
   WSEntityCreate,
   WSEntityNetOwner,
 } from "altv-xsync-entity-shared"
@@ -148,6 +149,14 @@ export class InternalXSyncEntity {
     )
   }
 
+  public setEntityNetOwner (entity: InternalEntity, netOwner: alt.Player, disableMigration: boolean): void {
+    this.streamer.setEntityNetOwner(entity, netOwner, disableMigration)
+  }
+
+  public resetEntityNetOwner (entity: InternalEntity): void {
+    this.streamer.resetEntityNetOwner(entity)
+  }
+
   private emitWSPlayer <K extends WSClientOnServerEvents> (
     player: alt.Player,
     eventName: K,
@@ -230,7 +239,7 @@ export class InternalXSyncEntity {
     this.emitWSPlayer(
       player,
       WSClientOnServerEvents.EntitiesStreamIn,
-      this.convertEntitiesToWSCreate(entities),
+      this.convertEntitiesToWSCreate(entities, player),
     )
   }
 
@@ -278,20 +287,30 @@ export class InternalXSyncEntity {
     return entities.map(({ id }) => id)
   }
 
-  private convertEntitiesToWSCreate (entities: InternalEntity[]): WSEntityCreate[] {
+  private convertEntitiesToWSCreate (entities: InternalEntity[], player: alt.Player): WSEntityCreate[] {
     return entities.map((
       {
         poolId,
         id,
         pos,
         syncedMeta,
-      }) =>
-      [
+        disabledMigration,
+        netOwner,
+      }) => {
+      const entityCreate: WSEntityCreate = [
         poolId,
         id,
         WSVectors.altToWS(pos),
         syncedMeta,
-      ])
+      ]
+
+      if (disabledMigration && netOwner === player) {
+        // netOwnered param
+        entityCreate.push(1 as WSBoolean)
+      }
+
+      return entityCreate
+    })
   }
 
   private onWSSocketClose (player: alt.Player) {

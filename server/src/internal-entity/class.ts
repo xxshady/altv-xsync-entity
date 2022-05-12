@@ -68,8 +68,10 @@ export class InternalEntity {
     this.disabledMigration = disableMigration
 
     if (disableMigration) {
+      this.offPlayerRemoveHandler?.()
       this.offPlayerRemoveHandler = InternalXSyncEntity.instance
         .onPlayerRemove(netOwner, () => {
+          this.offPlayerRemoveHandler = null
           this.resetNetOwner()
         })
     }
@@ -78,6 +80,9 @@ export class InternalEntity {
   }
 
   public resetNetOwner (): void {
+    if (!this.disabledMigration) return
+    this.disabledMigration = false
+
     InternalXSyncEntity.instance.resetEntityNetOwner(this)
 
     this.offPlayerRemoveHandler?.()

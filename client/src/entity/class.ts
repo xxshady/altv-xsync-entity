@@ -17,6 +17,7 @@ export abstract class Entity<T extends EntityData = EntityData> {
     const entityPool = InternalEntityPool.getEntityPool(this)
     if (!entityPool) return
 
+    InternalEntity.getInternalByPublic(entity).pos = pos
     entityPool.updateNetOwnerPos(entity, pos)
   }
 
@@ -29,6 +30,10 @@ export abstract class Entity<T extends EntityData = EntityData> {
     const entityPool = InternalEntityPool.getEntityPool(this)
     if (!entityPool) return
 
+    Object.assign(
+      InternalEntity.getInternalByPublic(entity).syncedMeta,
+      changedMeta,
+    )
     entityPool.updateNetOwnerSyncedMeta(entity, changedMeta)
   }
 

@@ -34,7 +34,7 @@ export class InternalEntityPool {
   public static getEntityPool (entityClass: IEntityClass): EntityPool<Entity> | null {
     const entityPool = InternalEntityPool.entityPoolByEntityClass.get(entityClass)
     if (!entityPool) {
-      throw new Error(`[Entity.updateNetOwnerSyncedMeta] unknown entity class: ${entityClass.name}`)
+      throw new Error(`[getEntityPool] unknown entity class: ${entityClass.name}`)
     }
 
     return entityPool
@@ -45,12 +45,12 @@ export class InternalEntityPool {
   constructor (
     public readonly id: number,
     public readonly EntityClass: IEntityClass,
-    public readonly publicIstance: EntityPool<Entity>,
+    public readonly publicInstance: EntityPool<Entity>,
   ) {
     this.log = createLogger(`xsync:entitypool ${EntityClass.name} (id: ${this.id})`)
 
     InternalXSyncEntity.instance.addEntityPool(this as InternalEntityPool)
-    InternalEntityPool.entityPoolByEntityClass.set(EntityClass, publicIstance)
+    InternalEntityPool.entityPoolByEntityClass.set(EntityClass, publicInstance)
   }
 
   public streamInEntity (entity: Entity): void {

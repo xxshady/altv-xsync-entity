@@ -257,6 +257,8 @@ export class InternalXSyncEntity {
     this.emitWSPlayer(player, WSClientOnServerEvents.EntityDestroy, entityId)
   }
 
+  // TODO: dont send event to client, if this client is already netowner,
+  // send netOwnered param in entity stream in event instead
   private onEntityNetOwnerChange (entityNetOwnerChanges: [entity: InternalEntity, oldNetOwner: alt.Player | null, newNetOwner: alt.Player | null][]) {
     const WSEntitiesData = new Map<alt.Player, WSEntityNetOwner[]>()
 

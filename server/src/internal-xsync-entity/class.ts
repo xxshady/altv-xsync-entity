@@ -23,6 +23,7 @@ import type {
   IWSSOptions,
 } from "../xsync-entity/types"
 import type { FirstPlayerParamToInterface } from "../utils/types"
+import type { PlayerRemoveHandler } from "./types"
 
 export class InternalXSyncEntity {
   // TODO move in shared
@@ -47,6 +48,8 @@ export class InternalXSyncEntity {
   private readonly wsServerUrl: string
 
   private readonly netOwnerChangeHandler: INetOwnerLogicOptions["entityNetOwnerChange"]
+
+  private readonly playerRemoveHandlers = new Map<alt.Player, Set<PlayerRemoveHandler>>()
 
   private readonly WSEventHandlers: FirstPlayerParamToInterface<IWSServerOnClientEvent> = {
     [WSServerOnClientEvents.UpdateEntitySyncedMeta]: (player, entityId, meta) => {
@@ -157,6 +160,18 @@ export class InternalXSyncEntity {
     this.streamer.resetEntityNetOwner(entity)
   }
 
+  public onPlayerRemove (player: alt.Player, handler: (player: alt.Player) => void): () => void {
+    const handlers = this.playerRemoveHandlers.get(player) ?? new Set()
+
+    handlers.add(handler)
+
+    this.playerRemoveHandlers.set(player, handlers)
+
+    return () => {
+      this.playerRemoveHandlers.get(player)?.delete(handler)
+    }
+  }
+
   private emitWSPlayer <K extends WSClientOnServerEvents> (
     player: alt.Player,
     eventName: K,
@@ -231,6 +246,13 @@ export class InternalXSyncEntity {
     this.players.remove(player)
     this.streamer.removePlayer(player)
     this.wss.removePlayer(player)
+
+    const handlers = this.playerRemoveHandlers.get(player)
+    if (!handlers) return
+
+    this.playerRemoveHandlers.delete(player)
+    // TEST
+    // for (const handler of handlers) handler(player)
   }
 
   private onEntitiesStreamIn (player: alt.Player, entities: InternalEntity[]) {
@@ -259,7 +281,13 @@ export class InternalXSyncEntity {
 
   // TODO: dont send event to client, if this client is already netowner,
   // send netOwnered param in entity stream in event instead
-  private onEntityNetOwnerChange (entityNetOwnerChanges: [entity: InternalEntity, oldNetOwner: alt.Player | null, newNetOwner: alt.Player | null][]) {
+  private onEntityNetOwnerChange (
+    entityNetOwnerChanges: [
+      entity: InternalEntity,
+      oldNetOwner: alt.Player | null,
+      newNetOwner: alt.Player | null,
+    ][],
+  ) {
     const WSEntitiesData = new Map<alt.Player, WSEntityNetOwner[]>()
 
     for (let i = 0; i < entityNetOwnerChanges.length; i++) {

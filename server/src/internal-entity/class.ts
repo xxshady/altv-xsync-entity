@@ -12,6 +12,8 @@ export class InternalEntity {
   public netOwner: alt.Player | null = null
   public disabledMigration = false
 
+  private offPlayerRemoveHandler: (() => void) | null = null
+
   constructor (
     public readonly publicInstance: Entity,
     public readonly poolId: number,
@@ -65,10 +67,20 @@ export class InternalEntity {
     ) return
     this.disabledMigration = disableMigration
 
+    if (disableMigration) {
+      this.offPlayerRemoveHandler = InternalXSyncEntity.instance
+        .onPlayerRemove(netOwner, () => {
+          this.resetNetOwner()
+        })
+    }
+
     InternalXSyncEntity.instance.setEntityNetOwner(this, netOwner, disableMigration)
   }
 
   public resetNetOwner (): void {
     InternalXSyncEntity.instance.resetEntityNetOwner(this)
+
+    this.offPlayerRemoveHandler?.()
+    this.offPlayerRemoveHandler = null
   }
 }

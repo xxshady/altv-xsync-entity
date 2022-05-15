@@ -1,5 +1,5 @@
-import type * as alt from "alt-server"
-import { parentPort } from "worker_threads"
+import * as alt from "alt-server"
+// import { parentPort } from "worker_threads"
 import {
   StreamerWorkerEvents,
   StreamerFromWorkerEvents,
@@ -18,11 +18,13 @@ import type {
   EntityIdsNetOwnerChanges,
 } from "./types"
 import { dist2dWithRange } from "../utils/dist-2d-range"
+import { parentPort } from "./class"
 
 class Logger {
   private readonly prefix = "[xsync:streamer:worker]"
   private label = ""
-  private readonly enableInfo = ___DEV_MODE
+  // TEST
+  private readonly enableInfo = true
 
   public log (...args: unknown[]) {
     if (!this.enableInfo) return
@@ -295,6 +297,7 @@ class StreamerWorker {
   }
 
   constructor () {
+    this.log.log("StreamerWorker class")
     this.setupEvents()
   }
 
@@ -307,15 +310,18 @@ class StreamerWorker {
       data: args,
     }
 
-    parentPort?.postMessage(message)
+    parentPort.postMessage(message)
   }
 
   private setupEvents () {
-    parentPort?.on(
+    this.log.log("setupEvents parentPort?.on")
+    parentPort.on(
       "message",
       <K extends StreamerWorkerEvents> (
         { name, data }: IStreamerSharedWorkerMessage<IStreamerWorkerEvent, K>,
       ) => {
+        // this.log.log("[parentPort.on]", { name: StreamerWorkerEvents[name], data })
+
         const handler = this.eventHandlers[name]
 
         if (!handler) {
@@ -603,4 +609,24 @@ class StreamerWorker {
   }
 }
 
-new StreamerWorker()
+alt.nextTick(() => {
+  new StreamerWorker()
+})
+
+// TEST
+export default class Worker {
+  public listenerFrom: (message: unknown) => void = (message: unknown) => {
+    alt.logError("into parent (worker.listenerFrom) template listener args:")
+    console.log(message)
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public on (_: unknown, listener: (...args: any[]) => void): void {
+    alt.log("worker.on")
+    this.listenerFrom = listener
+  }
+
+  public postMessage (message: unknown): void {
+    parentPort.listenerFrom(message)
+  }
+}

@@ -1,4 +1,4 @@
-import type * as alt from "alt-server"
+import * as alt from "alt-server"
 import { InternalEntity } from "../internal-entity"
 import {
   StreamerFromWorkerEvents,
@@ -9,7 +9,6 @@ import type {
   IStreamerSharedWorkerMessage,
   IStreamerFromWorkerEvent,
 } from "./events"
-import Worker from "./streamer.worker.ts"
 import type { EntityPool } from "../entity-pool"
 import { InternalXSyncEntity } from "../internal-xsync-entity"
 import type {
@@ -22,9 +21,29 @@ import type {
 } from "./types"
 import { createLogger, LogLevel } from "altv-xlogger"
 import type { Entity } from "../entity"
+import Worker from "./streamer_worker"
+
+const worker = new Worker()
+
+export const parentPort = new (class Worker {
+  public listenerFrom: (message: unknown) => void = (message: unknown) => {
+    alt.logError("template listener args:")
+    console.log(message)
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public on (_: unknown, listener: (...args: any[]) => void): void {
+    alt.log("parentPort.on")
+    this.listenerFrom = listener
+  }
+
+  public postMessage (message: unknown): void {
+    worker.listenerFrom(message)
+  }
+})()
 
 export class Streamer {
-  private readonly worker = new Worker()
+  private readonly worker = worker
   private readonly log = createLogger("xsync:streamer", {
     logLevel: ___DEV_MODE ? LogLevel.Info : LogLevel.Warn,
   })
@@ -235,10 +254,12 @@ export class Streamer {
     private readonly onEntityDestroy: (player: alt.Player, entityId: number) => void,
     private readonly onEntityNetOwnerChange: (entityNetOwnerChanges: [entity: InternalEntity, oldNetOwner: alt.Player | null, newNetOwner: alt.Player | null][]) => void,
   ) {
-    this.setupWorkerEvents()
-    this.setupPlayersUpdateInterval(streamDelay)
+    alt.nextTick(() => {
+      this.setupWorkerEvents()
+      this.setupPlayersUpdateInterval(streamDelay)
 
-    if (useNetOwnerLogic) this.enableNetOwnerLogic()
+      if (useNetOwnerLogic) this.enableNetOwnerLogic()
+    })
   }
 
   public addPool ({ id, maxStreamedIn }: EntityPool): void {
@@ -348,12 +369,14 @@ export class Streamer {
     eventName: K,
     ...args: Parameters<IStreamerWorkerEvent[K]>
   ): void {
-    const message: IStreamerSharedWorkerMessage<IStreamerWorkerEvent, K> = {
-      name: eventName,
-      data: args,
-    }
+    alt.setTimeout(() => {
+      const message: IStreamerSharedWorkerMessage<IStreamerWorkerEvent, K> = {
+        name: eventName,
+        data: args,
+      }
 
-    this.worker.postMessage(message)
+      this.worker.postMessage(message)
+    }, 50)
   }
 
   private setupWorkerEvents () {
@@ -362,6 +385,10 @@ export class Streamer {
       <K extends StreamerFromWorkerEvents> (
         { name, data }: IStreamerSharedWorkerMessage<IStreamerFromWorkerEvent, K>,
       ) => {
+        if (name === StreamerFromWorkerEvents.EntitiesCreated) {
+          this.log.moreInfo("[worker.on]", { name: StreamerFromWorkerEvents[name], data })
+        }
+
         const handler = this.eventHandlers[name]
 
         if (!handler) {
@@ -381,9 +408,9 @@ export class Streamer {
       },
     )
 
-    this.worker.on("error", (err) => {
-      this.log.error("from worker error:", err.stack)
-    })
+    // this.worker.on("error", (err) => {
+    //   this.log.error("from worker error:", err.stack)
+    // })
   }
 
   private setupPlayersUpdateInterval (streamDelay: number) {

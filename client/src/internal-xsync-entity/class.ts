@@ -18,7 +18,7 @@ import { InternalEntityPool } from "../internal-entity-pool"
 import { getServerIp } from "../utils/get-server-ip"
 import type { INetOwnerLogicOptions } from "../xsync-entity/types"
 import { InternalEntity } from "../internal-entity"
-import type { Entity, Entity as PublicEntity } from "../entity"
+import type { Entity as PublicEntity } from "../entity"
 
 export class InternalXSyncEntity {
   // TODO move in shared
@@ -34,7 +34,7 @@ export class InternalXSyncEntity {
     return _instance
   }
 
-  private readonly log = createLogger("xsync", {
+  private readonly log = createLogger("xsync > main", {
     logLevel: ___DEV_MODE ? LogLevel.Info : LogLevel.Warn,
   })
 
@@ -44,7 +44,7 @@ export class InternalXSyncEntity {
 
   private readonly WSEventHandlers: IWSClientOnServerEvent = {
     [WSClientOnServerEvents.EntitiesStreamIn]: (entities) => {
-      this.log.log(`stream in: ${entities.length}`)
+      this.log.log(`stream in amount of entities: ${entities.length}`)
 
       for (let i = 0; i < entities.length; i++) {
         const [poolId, entityId, pos, syncedMeta, netOwnered] = entities[i]
@@ -65,6 +65,8 @@ export class InternalXSyncEntity {
           syncedMeta,
         )
 
+        this.log.log("stream in id:", entity.id, "type:", entityPool.EntityClass.name)
+
         entityPool.streamInEntity(entity)
 
         if (netOwnered) {
@@ -74,12 +76,14 @@ export class InternalXSyncEntity {
     },
 
     [WSClientOnServerEvents.EntitiesStreamOut]: (entityIds) => {
-      this.log.log(`stream out: ${entityIds.length}`)
+      this.log.log(`stream out amount of entities: ${entityIds.length}`)
 
       for (let i = 0; i < entityIds.length; i++) {
         const entity = InternalEntityPool.entities[entityIds[i]]
 
         if (!entity) continue
+
+        this.log.log("stream out id:", entity.id, "type:", entity.publicInstance.constructor?.name)
 
         this.removeNetOwneredEntity(entity)
         InternalEntityPool.streamOutEntity(entityIds[i])

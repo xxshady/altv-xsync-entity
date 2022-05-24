@@ -1,6 +1,6 @@
 {
   "name": "altv-xsync-entity-client",
-  "version": "2.3.3",
+  "version": "2.3.4",
   "main": "dist/main.js",
   "types": "dist/main.d.ts",
   "files": [

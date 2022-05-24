@@ -12,7 +12,7 @@ import {
 
 export class WSClient<TEvents extends EventsTypeAny> {
   private readonly log = createLogger("xsync:ws", {
-    logLevel: ___DEV_MODE ? LogLevel.Info : LogLevel.Warn,
+    logLevel: LogLevel.Info,
   })
 
   private readonly player = alt.Player.local

@@ -40,12 +40,12 @@ export class InternalEntity<T extends EntityData = EntityData> {
 
     const handlers = this.handlers.get(entityClass)
     if (!handlers) {
-      throw new Error(`[xsync] ${logMessage} no event handlers are set, use the @onEvents() decorator on your entity class`)
+      throw new Error(`[xsync] ${logMessage} no event handlers are set, use the @onEntityEvents() decorator on your entity class`)
     }
 
     const handler = handlers[eventName]
     if (!handler) {
-      log.warn(`${logMessage} no handler is set, which can be set in the @onEvents() decorator`)
+      log.warn(`${logMessage} no handler is set, which can be set in the @onEntityEvents() decorator`)
       return
     }
 

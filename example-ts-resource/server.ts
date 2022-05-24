@@ -1,5 +1,5 @@
 import * as alt from "alt-server"
-import type { IMarkerData } from "./shared"
+import type { IMarkerSyncedMeta } from "./shared"
 import { EntityPools } from "./shared"
 import { XSyncEntity, EntityPool, Entity } from "altv-xsync-entity-server"
 
@@ -31,8 +31,8 @@ new XSyncEntity(
   // {
   //   domainName: 'domain.name',
   //   port: 7700,
-  //   useWss: true,
-  //   localhost: true,
+  //   useWss: false,
+  //   localhost: false,
   // }
 )
 
@@ -41,7 +41,7 @@ const markersPool = new EntityPool(
   { maxStreamedIn: 50 },
 )
 
-class Marker extends Entity<IMarkerData> {
+class Marker extends Entity<IMarkerSyncedMeta> {
   constructor(pos: alt.IVector3, type: number) {
     super(
       markersPool,

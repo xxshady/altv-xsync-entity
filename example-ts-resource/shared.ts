@@ -2,6 +2,6 @@ export enum EntityPools {
   Marker,
 }
 
-export interface IMarkerData {
+export interface IMarkerSyncedMeta {
   type: number
 }

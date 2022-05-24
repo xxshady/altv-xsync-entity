@@ -19,12 +19,22 @@ export class EntityPool <T extends Entity> {
   }
 
   public updateNetOwnerSyncedMeta (entity: Entity, syncedMeta: Partial<T["syncedMeta"]>): void {
-    if (!entity.netOwnered) return
+    if (!entity.netOwnered) {
+      throw new Error(
+        "xsync updateNetOwnerSyncedMeta | local player is not netowner" +
+        `of that entity: ${entity.id} (class: ${entity.constructor?.name})`,
+      )
+    }
     InternalXSyncEntity.instance.updateNetOwnerSyncedMeta(entity, syncedMeta)
   }
 
   public updateNetOwnerPos (entity: Entity, pos: alt.IVector3): void {
-    if (!entity.netOwnered) return
+    if (!entity.netOwnered) {
+      throw new Error(
+        "xsync updateNetOwnerPos | local player is not netowner" +
+        `of that entity: ${entity.id} (class: ${entity.constructor?.name})`,
+      )
+    }
     InternalXSyncEntity.instance.updateNetOwnerPos(entity, pos)
   }
 }

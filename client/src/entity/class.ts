@@ -17,8 +17,8 @@ export abstract class Entity<T extends EntityData = EntityData> {
     const entityPool = InternalEntityPool.getEntityPool(this)
     if (!entityPool) return
 
-    InternalEntity.getInternalByPublic(entity).pos = pos
     entityPool.updateNetOwnerPos(entity, pos)
+    InternalEntity.getInternalByPublic(entity).pos = pos
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,11 +30,11 @@ export abstract class Entity<T extends EntityData = EntityData> {
     const entityPool = InternalEntityPool.getEntityPool(this)
     if (!entityPool) return
 
+    entityPool.updateNetOwnerSyncedMeta(entity, changedMeta)
     Object.assign(
       InternalEntity.getInternalByPublic(entity).syncedMeta,
       changedMeta,
     )
-    entityPool.updateNetOwnerSyncedMeta(entity, changedMeta)
   }
 
   // TODO: make constructor private

@@ -93,6 +93,8 @@ export class InternalXSyncEntity {
 
     this.wsServerUrl = localhost ? `localhost:${port}` : `wss://${domainName}`
 
+    this.log.log(`use client connection url: "${this.wsServerUrl}"`)
+
     this.wss = new WSServer(
       port,
       {

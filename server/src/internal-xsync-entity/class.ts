@@ -16,7 +16,7 @@ import {
   WSClientOnServerEvents,
 } from "altv-xsync-entity-shared"
 import { Players } from "../players"
-import { createLogger } from "altv-xlogger"
+import { createLogger, LogLevel } from "altv-xlogger"
 import { InternalEntity } from "../internal-entity"
 import type {
   INetOwnerLogicOptions,
@@ -24,6 +24,7 @@ import type {
 } from "../xsync-entity/types"
 import type { FirstPlayerParamToInterface } from "../utils/types"
 import type { PlayerRemoveHandler } from "./types"
+import { dist2dWithRange } from "../utils/dist-2d-range"
 
 export class InternalXSyncEntity {
   // TODO move in shared
@@ -48,6 +49,7 @@ export class InternalXSyncEntity {
   private readonly wsServerUrl: string
 
   private readonly netOwnerChangeHandler: INetOwnerLogicOptions["entityNetOwnerChange"]
+  private readonly requestUpdateEntitySyncedMetaHandler: INetOwnerLogicOptions["requestUpdateEntitySyncedMeta"]
 
   private readonly playerRemoveHandlers = new Map<alt.Player, Set<PlayerRemoveHandler>>()
 
@@ -68,6 +70,33 @@ export class InternalXSyncEntity {
 
       entity.netOwnerPosUpdate(WSVectors.WStoAlt(pos))
       this.updateEntityPos(entity, player)
+    },
+
+    [WSServerOnClientEvents.RequestUpdateEntitySyncedMeta]: (player, entityId, meta) => {
+      if (!this.requestUpdateEntitySyncedMetaHandler) {
+        this.log.error("[RequestUpdateEntitySyncedMeta] received request, while handler is not set")
+        return
+      }
+
+      const entity = InternalEntity.all[entityId]
+      if (!entity) {
+        this.log.warn(`[RequestUpdateEntitySyncedMeta] received invalid entityId: ${entityId}`)
+        return
+      }
+
+      const { streamRange } = entity
+      if (dist2dWithRange(entity.pos, player.pos, streamRange) > streamRange) {
+        this.log.warn(`[RequestUpdateEntitySyncedMeta] received entityId: ${entityId} over stream range (${streamRange})`)
+        return
+      }
+
+      const result = this.requestUpdateEntitySyncedMetaHandler(entity.publicInstance, player, meta)
+      if (!result) {
+        this.log.log(`[RequestUpdateEntitySyncedMeta] canceled, player: ${player.name} entity id: ${entityId}`)
+        return
+      }
+
+      entity.setSyncedMeta(meta)
     },
   }
 
@@ -93,7 +122,11 @@ export class InternalXSyncEntity {
 
     this.wsServerUrl = localhost ? `localhost:${port}` : `wss://${domainName}`
 
+    // TODO: add explicit log method to logger
+    const { logLevel } = this.log
+    this.log.logLevel = LogLevel.Info
     this.log.log(`use client connection url: "${this.wsServerUrl}"`)
+    this.log.logLevel = logLevel
 
     this.wss = new WSServer(
       port,
@@ -116,6 +149,7 @@ export class InternalXSyncEntity {
     )
 
     this.netOwnerChangeHandler = netOwnerLogic?.entityNetOwnerChange
+    this.requestUpdateEntitySyncedMetaHandler = netOwnerLogic?.requestUpdateEntitySyncedMeta
 
     this.setupAltvEvents()
   }
@@ -253,8 +287,7 @@ export class InternalXSyncEntity {
     if (!handlers) return
 
     this.playerRemoveHandlers.delete(player)
-    // TEST
-    // for (const handler of handlers) handler(player)
+    for (const handler of handlers) handler(player)
   }
 
   private onEntitiesStreamIn (player: alt.Player, entities: InternalEntity[]) {
@@ -366,12 +399,12 @@ export class InternalXSyncEntity {
   private getEntityForNetOwner (netOwner: alt.Player, entityId: number): InternalEntity | null {
     const entity = InternalEntity.all[entityId]
     if (!entity) {
-      this.log.warn(`[OnClientEvents.UpdateEntitySyncedMeta] received invalid entityId: ${entityId}`)
+      this.log.warn(`[getEntityForNetOwner] received invalid entityId: ${entityId}`)
       return null
     }
 
     if (entity.netOwner !== netOwner) {
-      this.log.warn(`[OnClientEvents.UpdateEntitySyncedMeta] player is not netowner (${netOwner.id}) of entityId: ${entityId}`)
+      this.log.warn(`[getEntityForNetOwner] player is not netowner (${netOwner.id}) of entityId: ${entityId}`)
       return null
     }
 

@@ -28,6 +28,16 @@ export class EntityPool <T extends Entity> {
     InternalXSyncEntity.instance.updateNetOwnerSyncedMeta(entity, syncedMeta)
   }
 
+  public requestUpdateWatcherSyncedMeta (entity: Entity, syncedMeta: Partial<T["syncedMeta"]>): void {
+    if (entity.netOwnered) {
+      throw new Error(
+        "xsync requestUpdateWatcherSyncedMeta | local player is netowner, use updateNetOwnerSyncedMeta" +
+        `of that entity: ${entity.id} (class: ${entity.constructor?.name})`,
+      )
+    }
+    InternalXSyncEntity.instance.requestUpdateWatcherSyncedMeta(entity, syncedMeta)
+  }
+
   public updateNetOwnerPos (entity: Entity, pos: alt.IVector3): void {
     if (!entity.netOwnered) {
       throw new Error(

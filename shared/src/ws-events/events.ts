@@ -25,9 +25,11 @@ export interface IWSClientOnServerEvent {
 export enum WSServerOnClientEvents {
   UpdateEntitySyncedMeta,
   UpdateEntityPos,
+  RequestUpdateEntitySyncedMeta,
 }
 
 export interface IWSServerOnClientEvent {
   [WSServerOnClientEvents.UpdateEntitySyncedMeta]: (entityId: number, syncedMeta: Record<string, unknown>) => void
   [WSServerOnClientEvents.UpdateEntityPos]: (entityId: number, pos: WSVector3) => void
+  [WSServerOnClientEvents.RequestUpdateEntitySyncedMeta]: (entityId: number, syncedMeta: Record<string, unknown>) => void
 }

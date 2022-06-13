@@ -37,6 +37,24 @@ export abstract class Entity<T extends EntityData = EntityData> {
     )
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public static requestUpdateWatcherSyncedMeta<U extends new (...args: any) => Entity> (
+    this: U,
+    entity: InstanceType<U>,
+    changedMeta: Partial<InstanceType<U>["syncedMeta"]>,
+  ): void {
+    const entityPool = InternalEntityPool.getEntityPool(this)
+    if (!entityPool) return
+
+    entityPool.requestUpdateWatcherSyncedMeta(entity, changedMeta)
+
+    // do we need update local entity synced meta if it still gets updated from the server?
+    // Object.assign(
+    //   InternalEntity.getInternalByPublic(entity).syncedMeta,
+    //   changedMeta,
+    // )
+  }
+
   // TODO: make constructor private
   constructor (
     public readonly id: number,

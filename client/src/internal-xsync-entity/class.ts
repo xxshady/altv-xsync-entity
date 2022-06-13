@@ -147,6 +147,10 @@ export class InternalXSyncEntity {
     this.emitWSServer(WSServerOnClientEvents.UpdateEntitySyncedMeta, entity.id, meta)
   }
 
+  public requestUpdateWatcherSyncedMeta<T extends PublicEntity> (entity: T, meta: Partial<T["syncedMeta"]>): void {
+    this.emitWSServer(WSServerOnClientEvents.RequestUpdateEntitySyncedMeta, entity.id, meta)
+  }
+
   public updateNetOwnerPos<T extends PublicEntity> (entity: T, pos: alt.IVector3): void {
     this.emitWSServer(WSServerOnClientEvents.UpdateEntityPos, entity.id, WSVectors.altToWS(pos))
   }

@@ -4,7 +4,7 @@ import {
   getSharedBuildOptions, 
   typesGenerator 
 } from '../build-src/shared-options'
-import exportWorkersPlugin from '../build-src/plugins/export-node-workers'
+import inlineWorkerPlugin from '../build-src/plugins/inline-node-worker'
 
 const sharedOptions = getSharedBuildOptions(process)
 
@@ -24,6 +24,6 @@ build({
   ],
 
   plugins: [
-    exportWorkersPlugin({ define: sharedOptions.define })
+    inlineWorkerPlugin({ define: sharedOptions.define })
   ]
 }).then(typesGenerator())

@@ -293,12 +293,10 @@ export class Streamer {
 
   public getEntityStreamedPlayers ({ id }: InternalEntity, excludeNetOwner?: alt.Player): alt.Player[] {
     const playerIds = this.entitiesStreamedPlayerIds[id]
+    if (!playerIds) return []
+
     const players: alt.Player[] = []
     const { removedPlayerIds } = this.currentPlayersUpdate
-
-    if (!playerIds) {
-      throw new Error(`streamer getEntityStreamedPlayers invalid entity: ${id}`)
-    }
 
     for (const playerId of playerIds) {
       const player = InternalXSyncEntity.instance.players.dict[playerId]

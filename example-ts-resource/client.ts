@@ -17,6 +17,9 @@ class Marker extends xsync.Entity<IMarkerSyncedMeta> {
   private render = 0
 
   private streamIn(): void {
+    alt.log('streamIn marker id:', this.id)
+    alt.log("syncedMeta:~gl~", JSON.stringify(this.syncedMeta, null, 2))
+
     this.render = alt.everyTick(() => {
       native.drawMarker(
         this.syncedMeta.type,
@@ -50,3 +53,5 @@ class Marker extends xsync.Entity<IMarkerSyncedMeta> {
 }
 
 new xsync.EntityPool(EntityPools.Marker, Marker)
+
+alt.log('client started')

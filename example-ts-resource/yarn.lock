@@ -22,15 +22,15 @@
   resolved "https://registry.yarnpkg.com/@altv/types-shared/-/types-shared-1.1.2.tgz#3619ed39ce46c49364f01486cf39efe46961792d"
   integrity sha512-jsSDRlIW+hsIMco1NkAUCUtf2oW83MfcA0Hhf0jkJjkx9ehl8n+YRGVRi4Mcejpt35BmAkTvgn1AvvAMk66miw==
 
-altv-xsync-entity-client@^0.0.4:
-  version "0.0.4"
-  resolved "https://registry.yarnpkg.com/altv-xsync-entity-client/-/altv-xsync-entity-client-0.0.4.tgz#a69138971a1fc4039942387ed0efc5c187650aa7"
-  integrity sha512-CSIBmWgt75lgP0Vjg/c8bZFRLv4H/1fryWBBpNrsF2j8VJkB7jBYLv2Ys+WMDv/M9CPhljWm0I5XrRjQTJe8LQ==
+altv-xsync-entity-client@^2.4.0:
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/altv-xsync-entity-client/-/altv-xsync-entity-client-2.4.0.tgz#c3cf0212a7092086176da3910ddd70f6d686b3c4"
+  integrity sha512-A4NgT+8TSW8xiNtO6xJK1mQrITbh0UFMoLFXNW0+bvyfVtg4dbkkIPauHc/EIq1XRKpwEeXsieXD4kSwZEd+yA==
 
-altv-xsync-entity-server@^0.0.4:
-  version "0.0.4"
-  resolved "https://registry.yarnpkg.com/altv-xsync-entity-server/-/altv-xsync-entity-server-0.0.4.tgz#4019643d6db32ad60d1cad22fe99f6922f4c8462"
-  integrity sha512-4afiMhkabGEBt9v6WD6pakTIaszs3iBs7Bf08Xwm6JB6wg16t16X1Z7Ro7Mupr6Rm44EeGDuvfAczDXWmBrK6A==
+altv-xsync-entity-server@^2.4.1:
+  version "2.4.1"
+  resolved "https://registry.yarnpkg.com/altv-xsync-entity-server/-/altv-xsync-entity-server-2.4.1.tgz#65620aad838694f8066400d400ab1d739678cfea"
+  integrity sha512-onQZGNOLQmxwm+EYjQ+M7+XyFHoE2nacp2BrNJl6Lh4GFWa0pjq4Tud2Ops/HaA5Se0xib4kjzQ5mwd8D8pDzg==
 
 ansi-regex@^5.0.1:
   version "5.0.1"

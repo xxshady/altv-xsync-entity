@@ -5,8 +5,8 @@
     "@altv/types-natives": "^1.4.3",
     "@altv/types-server": "^2.1.7",
     "@altv/types-shared": "^1.1.2",
-    "altv-xsync-entity-client": "^1.0.0",
-    "altv-xsync-entity-server": "^1.0.0",
+    "altv-xsync-entity-client": "^2.4.0",
+    "altv-xsync-entity-server": "^2.4.1",
     "concurrently": "^6.4.0",
     "esbuild": "^0.14.5"
   },

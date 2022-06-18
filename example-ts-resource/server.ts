@@ -69,5 +69,7 @@ const marker = new Marker(
   2,
 )
 
+console.log('marker:', marker)
+
 // this will send updated partial synced meta to the client in "syncedMetaChange" event
-marker.setSyncedMeta({ type: 5 })
+marker.setSyncedMeta({ type: 4 })

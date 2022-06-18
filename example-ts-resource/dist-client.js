@@ -1,3 +1,15 @@
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __decorateClass = (decorators, target, key, kind) => {
+  var result = kind > 1 ? void 0 : kind ? __getOwnPropDesc(target, key) : target;
+  for (var i = decorators.length - 1, decorator; i >= 0; i--)
+    if (decorator = decorators[i])
+      result = (kind ? decorator(target, key, result) : decorator(result)) || result;
+  if (kind && result)
+    __defProp(target, key, result);
+  return result;
+};
+
 // client.ts
 import * as alt5 from "alt-client";
 import * as native from "natives";
@@ -18,14 +30,14 @@ import alt3 from "alt-shared";
 import {
   getServerIp
 } from "alt-client";
-var __defProp = Object.defineProperty;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __defProp2 = Object.defineProperty;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => {
   __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
   return value;
 };
-var __defProp2 = Object.defineProperty;
-var __defNormalProp2 = (obj, key, value) => key in obj ? __defProp2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __defProp22 = Object.defineProperty;
+var __defNormalProp2 = (obj, key, value) => key in obj ? __defProp22(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField2 = (obj, key, value) => {
   __defNormalProp2(obj, typeof key !== "symbol" ? key + "" : key, value);
   return value;
@@ -458,7 +470,7 @@ function create_default(name, options = {}) {
   return Logger.create(name, { enabled, logLevel });
 }
 var MessageEventsManager = class {
-  log = create_default("MessageManager");
+  log = create_default("xsync:message-manager");
   eventsHandlers;
   constructor(events) {
     this.eventsHandlers = events;
@@ -498,7 +510,16 @@ var WSClientOnServerEvents;
   WSClientOnServerEvents2[WSClientOnServerEvents2["EntitiesStreamIn"] = 0] = "EntitiesStreamIn";
   WSClientOnServerEvents2[WSClientOnServerEvents2["EntitiesStreamOut"] = 1] = "EntitiesStreamOut";
   WSClientOnServerEvents2[WSClientOnServerEvents2["EntityDestroy"] = 2] = "EntityDestroy";
+  WSClientOnServerEvents2[WSClientOnServerEvents2["EntitiesNetOwnerChange"] = 3] = "EntitiesNetOwnerChange";
+  WSClientOnServerEvents2[WSClientOnServerEvents2["EntityPosChange"] = 4] = "EntityPosChange";
+  WSClientOnServerEvents2[WSClientOnServerEvents2["EntitySyncedMetaChange"] = 5] = "EntitySyncedMetaChange";
 })(WSClientOnServerEvents || (WSClientOnServerEvents = {}));
+var WSServerOnClientEvents;
+(function(WSServerOnClientEvents2) {
+  WSServerOnClientEvents2[WSServerOnClientEvents2["UpdateEntitySyncedMeta"] = 0] = "UpdateEntitySyncedMeta";
+  WSServerOnClientEvents2[WSServerOnClientEvents2["UpdateEntityPos"] = 1] = "UpdateEntityPos";
+  WSServerOnClientEvents2[WSServerOnClientEvents2["RequestUpdateEntitySyncedMeta"] = 2] = "RequestUpdateEntitySyncedMeta";
+})(WSServerOnClientEvents || (WSServerOnClientEvents = {}));
 var WSVectors = class {
   static altToWS({ x, y, z }) {
     return [
@@ -939,7 +960,9 @@ function create_default2(name, options = {}) {
   return Logger2.create(name, { enabled, logLevel });
 }
 var WSClient = class {
-  log = create_default2("WSClient");
+  log = create_default2("xsync:ws", {
+    logLevel: LogLevel2.Info
+  });
   player = Player.local;
   messageHandlers = /* @__PURE__ */ new Set();
   eventsManager;
@@ -1025,31 +1048,111 @@ var WSClient = class {
     };
   }
 };
+var log = create_default2("xsync", { logLevel: false ? LogLevel2.Info : LogLevel2.Warn });
+var _InternalEntity = class {
+  constructor(publicInstance, id, pos, syncedMeta) {
+    this.publicInstance = publicInstance;
+    this.id = id;
+    this.pos = pos;
+    this.syncedMeta = syncedMeta;
+    if (!_InternalEntity.reservedEntities[id]) {
+      throw new Error("Entity cannot be created by client");
+    }
+    delete _InternalEntity.reservedEntities[id];
+    _InternalEntity.publicInternals.set(publicInstance, this);
+  }
+  static getInternalByPublic(publicEntity) {
+    const internal = this.publicInternals.get(publicEntity);
+    if (!internal) {
+      throw new Error(`InternalEntity: getInternalByPublic unknown publicEntity: ${publicEntity?.id}`);
+    }
+    return internal;
+  }
+  static addEventHandlers(entityClass, handlers) {
+    this.handlers.set(entityClass, handlers);
+  }
+  static handleEvent(entity, eventName, ...args) {
+    const entityClass = entity.publicInstance.constructor;
+    const logMessage = `received remote event "${eventName}" for entity class: ${entityClass.name} |`;
+    const handlers = this.handlers.get(entityClass);
+    if (!handlers) {
+      throw new Error(`[xsync] ${logMessage} no event handlers are set, use the @onEntityEvents() decorator on your entity class`);
+    }
+    const handler = handlers[eventName];
+    if (!handler) {
+      log.warn(`${logMessage} no handler is set, which can be set in the @onEntityEvents() decorator`);
+      return;
+    }
+    handler(entity.publicInstance, ...args);
+  }
+  netOwnered = false;
+  streamed = true;
+  streamIn() {
+    _InternalEntity.handleEvent(this, "streamIn");
+  }
+  streamOut() {
+    this.streamed = false;
+    this.netOwnered = false;
+    _InternalEntity.handleEvent(this, "streamOut");
+  }
+  posChange(pos) {
+    this.pos = pos;
+    _InternalEntity.handleEvent(this, "posChange", pos);
+  }
+  syncedMetaChange(syncedMeta) {
+    Object.assign(this.syncedMeta, syncedMeta);
+    _InternalEntity.handleEvent(this, "syncedMetaChange", syncedMeta);
+  }
+  netOwnerChange(isLocalPlayerNetOwner, syncedMeta) {
+    this.netOwnered = isLocalPlayerNetOwner;
+    _InternalEntity.handleEvent(this, "netOwnerChange", isLocalPlayerNetOwner, syncedMeta);
+  }
+};
+var InternalEntity = _InternalEntity;
+__publicField(InternalEntity, "publicInternals", /* @__PURE__ */ new Map());
+__publicField(InternalEntity, "handlers", /* @__PURE__ */ new Map());
+__publicField(InternalEntity, "reservedEntities", {});
 var _InternalEntityPool = class {
-  constructor(id, EntityClass) {
+  constructor(id, EntityClass, publicInstance) {
     this.id = id;
     this.EntityClass = EntityClass;
-    this.log = create_default2(`EntityPool ${EntityClass.name} (id: ${this.id})`);
+    this.publicInstance = publicInstance;
+    this.log = create_default2(`xsync:entitypool ${EntityClass.name} (id: ${this.id})`);
     InternalXSyncEntity.instance.addEntityPool(this);
+    _InternalEntityPool.entityPoolByEntityClass.set(EntityClass, publicInstance);
   }
-  static streamOutEntity(id) {
-    const entity = this.entities[id];
+  static streamOutEntity(entityOrId) {
+    let entity;
+    if (typeof entityOrId === "number") {
+      entity = this.entities[entityOrId];
+    } else {
+      entity = entityOrId;
+    }
     if (!entity) {
-      this.log.error(`[streamOutEntity] unknown entity id: ${id}`);
+      this.log.error(`[streamOutEntity] unknown entity id: ${entityOrId}`);
       return;
     }
     entity.streamOut();
-    delete this.entities[id];
+    delete this.entities[entity.id];
+  }
+  static getEntityPool(entityClass) {
+    const entityPool = _InternalEntityPool.entityPoolByEntityClass.get(entityClass);
+    if (!entityPool) {
+      throw new Error(`[getEntityPool] unknown entity class: ${entityClass.name}`);
+    }
+    return entityPool;
   }
   log;
   streamInEntity(entity) {
-    _InternalEntityPool.entities[entity.id] = entity;
-    entity.streamIn(entity.pos, entity.data);
+    const internal = InternalEntity.getInternalByPublic(entity);
+    _InternalEntityPool.entities[entity.id] = internal;
+    internal.streamIn();
   }
 };
 var InternalEntityPool = _InternalEntityPool;
 __publicField(InternalEntityPool, "entities", {});
-__publicField(InternalEntityPool, "log", create_default2("InternalEntityPool"));
+__publicField(InternalEntityPool, "log", create_default2("xsync:internal-entitypool"));
+__publicField(InternalEntityPool, "entityPoolByEntityClass", /* @__PURE__ */ new Map());
 var getServerIp2 = () => {
   const rawIp = getServerIp();
   return rawIp.slice(7);
@@ -1062,40 +1165,75 @@ var _InternalXSyncEntity = class {
     }
     return _instance;
   }
-  log = create_default2("XSyncEntity", {
-    logLevel: true ? LogLevel2.Info : LogLevel2.Warn
+  log = create_default2("xsync > main", {
+    logLevel: false ? LogLevel2.Info : LogLevel2.Warn
   });
   entityPools = {};
+  netOwnerChangeHandler;
+  netOwneredEntityIds = /* @__PURE__ */ new Set();
   WSEventHandlers = {
     [WSClientOnServerEvents.EntitiesStreamIn]: (entities) => {
-      this.log.log(`stream in: ${entities.length}`);
+      this.log.log(`stream in amount of entities: ${entities.length}`);
       for (let i = 0; i < entities.length; i++) {
-        const [poolId, entityId, pos, data] = entities[i];
+        const [poolId, entityId, pos, syncedMeta, netOwnered] = entities[i];
         const entityPool = this.entityPools[poolId];
         if (!entityPool) {
           throw new Error(`[WSClientOnServerEvents.EntitiesStreamIn] unknown pool id: ${poolId}`);
         }
         const posVector3 = WSVectors.WStoAlt(pos);
-        const entity = new entityPool.EntityClass(entityId, posVector3, data);
+        InternalEntity.reservedEntities[entityId] = true;
+        const entity = new entityPool.EntityClass(entityId, posVector3, syncedMeta);
+        this.log.log("stream in id:", entity.id, "type:", entityPool.EntityClass.name);
         entityPool.streamInEntity(entity);
+        if (netOwnered) {
+          this.handleEntityNetOwnerChange(entity.id, netOwnered);
+        }
       }
     },
     [WSClientOnServerEvents.EntitiesStreamOut]: (entityIds) => {
-      this.log.log(`stream out: ${entityIds.length}`);
+      this.log.log(`stream out amount of entities: ${entityIds.length}`);
       for (let i = 0; i < entityIds.length; i++) {
+        const entity = InternalEntityPool.entities[entityIds[i]];
+        if (!entity)
+          continue;
+        this.log.log("stream out id:", entity.id, "type:", entity.publicInstance.constructor?.name);
+        this.removeNetOwneredEntity(entity);
         InternalEntityPool.streamOutEntity(entityIds[i]);
       }
     },
     [WSClientOnServerEvents.EntityDestroy]: (entityId) => {
+      const entity = InternalEntityPool.entities[entityId];
+      if (!entity)
+        return;
+      this.removeNetOwneredEntity(entity);
       InternalEntityPool.streamOutEntity(entityId);
+    },
+    [WSClientOnServerEvents.EntitiesNetOwnerChange]: (entities) => {
+      for (let i = 0; i < entities.length; i++) {
+        const [entityId, isLocalPlayerNetOwner, syncedMeta] = entities[i];
+        this.handleEntityNetOwnerChange(entityId, isLocalPlayerNetOwner, syncedMeta);
+      }
+    },
+    [WSClientOnServerEvents.EntityPosChange]: (entityId, pos) => {
+      const entity = InternalEntityPool.entities[entityId];
+      if (!entity)
+        return;
+      entity.posChange(WSVectors.WStoAlt(pos));
+    },
+    [WSClientOnServerEvents.EntitySyncedMetaChange]: (entityId, syncedMeta) => {
+      const entity = InternalEntityPool.entities[entityId];
+      if (!entity)
+        return;
+      entity.syncedMetaChange(syncedMeta);
     }
   };
   ws = null;
-  constructor() {
+  constructor(netOwnerLogic) {
     if (_InternalXSyncEntity._instance) {
       throw new Error("InternalXSyncEntity already initialized");
     }
     _InternalXSyncEntity._instance = this;
+    this.netOwnerChangeHandler = netOwnerLogic?.entityNetOwnerChange;
     this.setupAltvEvents();
   }
   addEntityPool(pool) {
@@ -1104,10 +1242,22 @@ var _InternalXSyncEntity = class {
     }
     this.entityPools[pool.id] = pool;
   }
+  updateNetOwnerSyncedMeta(entity, meta) {
+    this.emitWSServer(WSServerOnClientEvents.UpdateEntitySyncedMeta, entity.id, meta);
+  }
+  requestUpdateWatcherSyncedMeta(entity, meta) {
+    this.emitWSServer(WSServerOnClientEvents.RequestUpdateEntitySyncedMeta, entity.id, meta);
+  }
+  updateNetOwnerPos(entity, pos) {
+    this.emitWSServer(WSServerOnClientEvents.UpdateEntityPos, entity.id, WSVectors.altToWS(pos));
+  }
   setupAltvEvents() {
     onServer(ClientOnServerEvents.AddPlayer, this.onAddPlayer.bind(this));
   }
-  onAddPlayer(authCode, serverUrl, serverPort) {
+  emitWSServer(eventName, ...args) {
+    this.ws?.send(eventName.toString(), ...args);
+  }
+  onAddPlayer(authCode, serverUrl) {
     let fullServerUrl;
     if (serverUrl.startsWith("localhost")) {
       const port = serverUrl.slice(serverUrl.indexOf(":") + 1);
@@ -1132,29 +1282,102 @@ var _InternalXSyncEntity = class {
       }
     }
   }
+  removeNetOwneredEntity(entity) {
+    this.netOwneredEntityIds.delete(entity.id);
+  }
+  handleEntityNetOwnerChange(entityId, isLocalPlayerNetOwner, syncedMeta) {
+    const entity = InternalEntityPool.entities[entityId];
+    if (!entity)
+      return;
+    const netOwnered = !!isLocalPlayerNetOwner;
+    syncedMeta && entity.syncedMetaChange(syncedMeta);
+    entity.netOwnerChange(netOwnered, syncedMeta);
+    this.netOwnerChangeHandler?.(entity.publicInstance, netOwnered);
+    if (netOwnered) {
+      this.netOwneredEntityIds.add(entity.id);
+    } else
+      this.removeNetOwneredEntity(entity);
+  }
 };
 var InternalXSyncEntity = _InternalXSyncEntity;
 __publicField(InternalXSyncEntity, "_instance", null);
 var XSyncEntity = class {
   internal;
-  constructor() {
-    this.internal = new InternalXSyncEntity();
+  constructor(netOwnerLogic) {
+    this.internal = new InternalXSyncEntity(netOwnerLogic);
   }
 };
 var Entity = class {
-  constructor(id, pos, data) {
+  constructor(id, pos, syncedMeta) {
     this.id = id;
-    this.pos = pos;
-    this.data = data;
+    this.internalInstance = new InternalEntity(this, id, pos, syncedMeta);
   }
+  internalInstance;
+  static getByID(id) {
+    const entity = InternalEntityPool.entities[id]?.publicInstance;
+    return entity instanceof this ? entity : null;
+  }
+  static updateNetOwnerPos(entity, pos) {
+    const entityPool = InternalEntityPool.getEntityPool(this);
+    if (!entityPool)
+      return;
+    entityPool.updateNetOwnerPos(entity, pos);
+    InternalEntity.getInternalByPublic(entity).pos = pos;
+  }
+  static updateNetOwnerSyncedMeta(entity, changedMeta) {
+    const entityPool = InternalEntityPool.getEntityPool(this);
+    if (!entityPool)
+      return;
+    entityPool.updateNetOwnerSyncedMeta(entity, changedMeta);
+    Object.assign(InternalEntity.getInternalByPublic(entity).syncedMeta, changedMeta);
+  }
+  static requestUpdateWatcherSyncedMeta(entity, changedMeta) {
+    const entityPool = InternalEntityPool.getEntityPool(this);
+    if (!entityPool)
+      return;
+    entityPool.requestUpdateWatcherSyncedMeta(entity, changedMeta);
+  }
+  get pos() {
+    return this.internalInstance.pos;
+  }
+  get netOwnered() {
+    return this.internalInstance.netOwnered;
+  }
+  get syncedMeta() {
+    return this.internalInstance.syncedMeta;
+  }
+  get streamed() {
+    return this.internalInstance.streamed;
+  }
+};
+var onEntityEvents = (events) => (entityClass) => {
+  InternalEntity.addEventHandlers(entityClass, events);
 };
 var EntityPool = class {
   constructor(id, EntityClass) {
     this.id = id;
     this.EntityClass = EntityClass;
-    this.internal = new InternalEntityPool(id, EntityClass);
+    this.internal = new InternalEntityPool(id, EntityClass, this);
   }
   internal;
+  updateNetOwnerSyncedMeta(entity, syncedMeta) {
+    if (!entity.netOwnered) {
+      throw new Error(`xsync updateNetOwnerSyncedMeta | local player is not netownerof that entity: ${entity.id} (class: ${entity.constructor?.name})`);
+    }
+    InternalXSyncEntity.instance.updateNetOwnerSyncedMeta(entity, syncedMeta);
+  }
+  requestUpdateWatcherSyncedMeta(entity, syncedMeta) {
+    if (entity.netOwnered) {
+      throw new Error(`xsync requestUpdateWatcherSyncedMeta | local player is netowner, use updateNetOwnerSyncedMetaof that entity: ${entity.id} (class: ${entity.constructor?.name})`);
+    }
+    InternalXSyncEntity.instance.requestUpdateWatcherSyncedMeta(entity, syncedMeta);
+  }
+  updateNetOwnerPos(entity, pos) {
+    if (!entity.netOwnered) {
+      throw new Error(`xsync updateNetOwnerPos | local player is not netownerof that entity: ${entity.id} (class: ${entity.constructor?.name})`);
+    }
+    InternalXSyncEntity.instance.updateNetOwnerPos(entity, pos);
+  }
 };
 
 // shared.ts
@@ -1165,14 +1388,32 @@ var EntityPools = /* @__PURE__ */ ((EntityPools2) => {
 
 // client.ts
 new XSyncEntity();
-new EntityPool(EntityPools.Marker, class Marker extends Entity {
+var Marker = class extends Entity {
   render = 0;
-  streamIn(pos, { type }) {
+  streamIn() {
+    alt5.log("streamIn marker id:", this.id);
+    alt5.log("syncedMeta:~gl~", JSON.stringify(this.syncedMeta, null, 2));
     this.render = alt5.everyTick(() => {
-      native.drawMarker(type, pos.x, pos.y, pos.z, 0, 0, 0, 0, 0, 0, 0.5, 0.5, 0.5, 100, 170, 255, 200, false, false, 2, true, void 0, void 0, false);
+      native.drawMarker(this.syncedMeta.type, this.pos.x, this.pos.y, this.pos.z, 0, 0, 0, 0, 0, 0, 0.5, 0.5, 0.5, 100, 170, 255, 200, false, false, 2, true, void 0, void 0, false);
     });
   }
   streamOut() {
     alt5.clearEveryTick(this.render);
   }
-});
+  syncedMetaChange(syncedMeta) {
+    alt5.log("syncedMetaChange:~gl~", JSON.stringify(syncedMeta, null, 2));
+  }
+  posChange(pos) {
+    alt5.log(`marker [${this.id}] pos changed:`, pos.x, pos.y);
+  }
+};
+Marker = __decorateClass([
+  onEntityEvents({
+    streamIn: (entity) => entity.streamIn(),
+    streamOut: (entity) => entity.streamOut(),
+    syncedMetaChange: (entity, syncedMeta) => entity.syncedMetaChange(syncedMeta),
+    posChange: (entity, pos) => entity.posChange(pos)
+  })
+], Marker);
+new EntityPool(EntityPools.Marker, Marker);
+alt5.log("client started");

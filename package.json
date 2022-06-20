@@ -11,7 +11,7 @@
     "build": "lerna run build --parallel",
     "types": "lerna run types --parallel",
     "dev": "lerna run watch --parallel",
-    "publish": "yarn build && yarn types && lerna publish"
+    "publ": "yarn build && yarn types && lerna publish"
   },
   "type": "module",
   "dependencies": {

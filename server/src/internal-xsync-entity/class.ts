@@ -45,7 +45,10 @@ export class InternalXSyncEntity {
   public readonly idProvider = new IdProvider()
   public readonly players = new Players()
 
-  private readonly log = createLogger("xsync:internal")
+  private readonly log = createLogger("xsync:internal", {
+    logLevel: ___DEV_MODE ? LogLevel.Info : LogLevel.Warn,
+  })
+
   private readonly wsServerUrl: string
 
   private readonly netOwnerChangeHandler: INetOwnerLogicOptions["entityNetOwnerChange"]
@@ -103,6 +106,7 @@ export class InternalXSyncEntity {
   constructor (
     streamDelay: number,
     wss: Required<IWSSOptions>,
+    private readonly customClientInit: boolean,
     netOwnerLogic?: INetOwnerLogicOptions,
   ) {
     if (InternalXSyncEntity._instance) {
@@ -238,14 +242,17 @@ export class InternalXSyncEntity {
   }
 
   private setupAltvEvents () {
-    alt.on("playerConnect", this.onPlayerConnect.bind(this))
+    if (!this.customClientInit) {
+      alt.on("playerConnect", this.initClientConnect.bind(this))
+    }
+
     alt.on("playerDisconnect", this.onPlayerDisconnect.bind(this))
   }
 
-  private onPlayerConnect (player: alt.Player) {
+  public initClientConnect (player: alt.Player): void {
     this.addPlayer(player).catch((e) => {
       if (e instanceof WSConnectTimeoutError) return
-      this.log.error("addPlayer error:", e.stack)
+      this.log.error("initClientConnect error:", e.stack)
     })
   }
 

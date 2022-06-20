@@ -24,3 +24,13 @@ export interface INetOwnerLogicOptions {
    */
   requestUpdateEntitySyncedMeta?: (entity: Entity, watcher: alt.Player, changedMeta: Readonly<Partial<EntityData>>) => boolean
 }
+
+export interface IOptions {
+  /**
+   * 100 by default
+   */
+  streamDelay?: number
+  wss?: IWSSOptions
+  netOwnerLogic?: INetOwnerLogicOptions
+  customClientInit?: boolean
+}

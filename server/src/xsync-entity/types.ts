@@ -1,6 +1,7 @@
 import type * as alt from "alt-server"
 import type { EntityData } from "altv-xsync-entity-shared"
 import type { Entity } from "../entity"
+import type { EntitySyncedMetaChangeHandler } from "../types"
 
 export interface IWSSOptions {
   certPath?: string
@@ -33,4 +34,5 @@ export interface IOptions {
   wss?: IWSSOptions
   netOwnerLogic?: INetOwnerLogicOptions
   customClientInit?: boolean
+  syncedMetaChange?: EntitySyncedMetaChangeHandler
 }

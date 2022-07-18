@@ -25,6 +25,8 @@ import type {
 import type { FirstPlayerParamToInterface } from "../utils/types"
 import type { PlayerRemoveHandler } from "./types"
 import { dist2dWithRange } from "../utils/dist-2d-range"
+import type { EntityPool } from "../entity-pool"
+import type { EntitySyncedMetaChangeHandler } from "../types"
 
 export class InternalXSyncEntity {
   // TODO move in shared
@@ -58,8 +60,6 @@ export class InternalXSyncEntity {
 
   private readonly WSEventHandlers: FirstPlayerParamToInterface<IWSServerOnClientEvent> = {
     [WSServerOnClientEvents.UpdateEntitySyncedMeta]: (player, entityId, meta) => {
-      this.log.moreInfo("UpdateEntitySyncedMeta entity:", entityId, meta)
-
       const entity = this.getEntityForNetOwner(player, entityId)
       if (!entity) return
 
@@ -99,15 +99,21 @@ export class InternalXSyncEntity {
         return
       }
 
-      entity.setSyncedMeta(meta)
+      entity.netOwnerSyncedMetaUpdate(meta)
+      this.updateEntitySyncedMeta(entity, meta, player)
     },
   }
+
+  private readonly entitySyncedMetaChangeHandler: EntitySyncedMetaChangeHandler
+
+  private readonly syncedMetaChangePoolHandlers = new Map<EntityPool, EntitySyncedMetaChangeHandler>()
 
   constructor (
     streamDelay: number,
     wss: Required<IWSSOptions>,
     private readonly customClientInit: boolean,
     netOwnerLogic?: INetOwnerLogicOptions,
+    entitySyncedMetaChange?: EntitySyncedMetaChangeHandler,
   ) {
     if (InternalXSyncEntity._instance) {
       throw new Error("InternalXSyncEntity already initialized")
@@ -156,6 +162,13 @@ export class InternalXSyncEntity {
     this.requestUpdateEntitySyncedMetaHandler = netOwnerLogic?.requestUpdateEntitySyncedMeta
 
     this.setupAltvEvents()
+
+    this.entitySyncedMetaChangeHandler = (entity, changedMeta, byPlayer) => {
+      entitySyncedMetaChange?.(entity, changedMeta, byPlayer)
+
+      const handler = this.syncedMetaChangePoolHandlers.get(entity.pool)
+      handler?.(entity, changedMeta, byPlayer)
+    }
   }
 
   public addEntity (entity: InternalEntity): void {
@@ -166,7 +179,7 @@ export class InternalXSyncEntity {
     this.streamer.removeEntity(entity)
   }
 
-  public updateEntityPos (entity: InternalEntity, byNetOwner?: alt.Player): void {
+  public updateEntityPos (entity: InternalEntity, byNetOwner: alt.Player | null): void {
     this.streamer.updateEntityPos(entity)
 
     this.emitWSStreamedPlayers(
@@ -180,7 +193,9 @@ export class InternalXSyncEntity {
     )
   }
 
-  public updateEntitySyncedMeta (entity: InternalEntity, syncedMeta: Record<string, unknown>, byNetOwner?: alt.Player): void {
+  public updateEntitySyncedMeta (entity: InternalEntity, syncedMeta: Record<string, unknown>, byPlayer: alt.Player | null): void {
+    this.entitySyncedMetaChangeHandler(entity.publicInstance, syncedMeta, byPlayer)
+
     this.emitWSStreamedPlayers(
       entity,
       WSClientOnServerEvents.EntitySyncedMetaChange,
@@ -188,7 +203,7 @@ export class InternalXSyncEntity {
         entity.id,
         syncedMeta,
       ],
-      byNetOwner,
+      byPlayer,
     )
   }
 
@@ -212,6 +227,10 @@ export class InternalXSyncEntity {
     }
   }
 
+  public onEntitySyncedMetaChangePool (entityPool: EntityPool, handler: EntitySyncedMetaChangeHandler): void {
+    this.syncedMetaChangePoolHandlers.set(entityPool, handler)
+  }
+
   private emitWSPlayer <K extends WSClientOnServerEvents> (
     player: alt.Player,
     eventName: K,
@@ -228,9 +247,9 @@ export class InternalXSyncEntity {
     entity: InternalEntity,
     eventName: K,
     args: Parameters<IWSClientOnServerEvent[K]>,
-    excludeNetOwner?: alt.Player,
+    excludePlayer: alt.Player | null,
   ) {
-    const players = this.streamer.getEntityStreamedPlayers(entity, excludeNetOwner)
+    const players = this.streamer.getEntityStreamedPlayers(entity, excludePlayer)
 
     for (let i = 0; i < players.length; i++) {
       this.emitWSPlayer(

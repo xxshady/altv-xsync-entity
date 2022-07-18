@@ -3,9 +3,13 @@ import type { EntityData } from "altv-xsync-entity-shared"
 import type { EntityPool } from "../entity-pool"
 import { InternalEntity } from "../internal-entity"
 import { InternalXSyncEntity } from "../internal-xsync-entity"
+import type { EntitySyncedMetaChangeHandler } from "../types"
 import { valid } from "./decorators"
+import type { IEntityEvents } from "./types"
 
 export class Entity<TSyncedMeta extends EntityData = EntityData, TMeta extends EntityData = EntityData> {
+  private static eventsSet = false
+
   public static get all (): Entity[] {
     return Object.values(InternalEntity.all).map(e => e.publicInstance)
   }
@@ -14,6 +18,21 @@ export class Entity<TSyncedMeta extends EntityData = EntityData, TMeta extends E
   public static getByID<T extends new (...args: any) => Entity> (this: T, id: number): InstanceType<T> | null {
     const entity = InternalEntity.all[id]?.publicInstance as InstanceType<T>
     return (entity instanceof this) ? entity : null
+  }
+
+  public static setupEvents <T extends typeof Entity> (
+    this: T,
+    entityPool: EntityPool,
+    events: IEntityEvents<InstanceType<T>>,
+  ): void {
+    if (this.eventsSet) throw new Error("Events already set")
+    this.eventsSet = true
+
+    InternalXSyncEntity.instance
+      .onEntitySyncedMetaChangePool(
+        entityPool,
+        events.syncedMetaChange as EntitySyncedMetaChangeHandler,
+      )
   }
 
   public readonly id = InternalXSyncEntity.instance.idProvider.getNext()

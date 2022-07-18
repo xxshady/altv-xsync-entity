@@ -35,7 +35,7 @@ export class InternalEntity {
   // used for public api Entity class
   public set pos (value: alt.IVector3) {
     this._pos = value
-    InternalXSyncEntity.instance.updateEntityPos(this)
+    InternalXSyncEntity.instance.updateEntityPos(this, null)
   }
 
   public destroy (): void {
@@ -43,7 +43,7 @@ export class InternalEntity {
     InternalXSyncEntity.instance.removeEntity(this)
   }
 
-  public netOwnerSyncedMetaUpdate (syncedMeta: EntityData): void {
+  public netOwnerSyncedMetaUpdate (syncedMeta: Partial<EntityData>): void {
     Object.assign(this.syncedMeta, syncedMeta)
   }
 
@@ -56,8 +56,8 @@ export class InternalEntity {
   }
 
   public setSyncedMeta (syncedMeta: Partial<EntityData>): void {
-    Object.assign(this.syncedMeta, syncedMeta)
-    InternalXSyncEntity.instance.updateEntitySyncedMeta(this, syncedMeta)
+    this.netOwnerSyncedMetaUpdate(syncedMeta)
+    InternalXSyncEntity.instance.updateEntitySyncedMeta(this, syncedMeta, null)
   }
 
   public setNetOwner (netOwner: alt.Player, disableMigration: boolean): void {

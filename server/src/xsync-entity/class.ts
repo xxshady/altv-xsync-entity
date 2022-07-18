@@ -1,8 +1,6 @@
 import type * as alt from "alt-server"
 import type {
   IOptions,
-  INetOwnerLogicOptions,
-  IWSSOptions,
 } from "./types"
 import { InternalXSyncEntity } from "../internal-xsync-entity"
 
@@ -14,6 +12,12 @@ export class XSyncEntity {
   private readonly customClientInit: boolean
 
   constructor (options: IOptions = {}) {
+    if (XSyncEntity._instance) {
+      throw new Error("XSyncEntity already initialized")
+    }
+
+    XSyncEntity._instance = this
+
     if (!(options instanceof Object)) {
       throw new TypeError("xsync options should be an object")
     }
@@ -23,6 +27,7 @@ export class XSyncEntity {
       customClientInit = false,
       netOwnerLogic,
       wss = {},
+      syncedMetaChange,
     } = options
 
     this.customClientInit = customClientInit
@@ -54,13 +59,8 @@ export class XSyncEntity {
       },
       customClientInit,
       netOwnerLogic,
+      syncedMetaChange,
     )
-
-    if (XSyncEntity._instance) {
-      throw new Error("XSyncEntity already initialized")
-    }
-
-    XSyncEntity._instance = this
   }
 
   public initClient (player: alt.Player): void {

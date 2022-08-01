@@ -9,6 +9,8 @@ export const getSharedBuildOptions = ({ argv }) => {
     }
     : false
   )
+  
+  console.log('getSharedBuildOptions watch:', watch)
 
   return {
     watch,

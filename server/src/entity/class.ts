@@ -118,6 +118,8 @@ export class Entity<TSyncedMeta extends EntityData = EntityData, TMeta extends E
 
   @valid()
   public setNetOwner (netOwner: alt.Player, disableMigration = false): void {
+    // asserts that player is connected to websocket server
+    InternalXSyncEntity.instance.wss.getPlayerSocket(netOwner)
     this.internalInstance.setNetOwner(netOwner, disableMigration)
   }
 

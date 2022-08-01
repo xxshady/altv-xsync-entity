@@ -71,6 +71,10 @@ export class XSyncEntity {
       )
     }
 
+    if (!player.valid) {
+      throw new Error("[initClient] player is invalid")
+    }
+
     this.internal.initClientConnect(player)
   }
 }

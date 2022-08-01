@@ -74,25 +74,8 @@ export class WSServer {
   }
 
   public sendPlayer (player: alt.Player, eventName: string, ...args: unknown[]): void {
-    if (!player.valid) return
-
+    const socket = this.getPlayerSocket(player)
     const message = this.eventsManager.send(eventName, args)
-
-    const playerData = this.players.get(player.id)
-
-    if (!playerData) {
-      throw new Error("[sendPlayer] player wasnt added")
-    }
-
-    const { socket } = playerData
-
-    if (!socket) {
-      throw new Error("[sendPlayer] player wasnt connected as ws")
-    }
-
-    if (socket.readyState === socket.CLOSED) {
-      throw new Error("[sendPlayer] socket closed")
-    }
 
     socket.send(message, (err) => {
       if (!err) return
@@ -152,6 +135,28 @@ export class WSServer {
         },
       })
     })
+  }
+
+  public getPlayerSocket (player: alt.Player): ws.WebSocket {
+    if (!player.valid) {
+      throw new Error("player is invalid")
+    }
+
+    const playerData = this.players.get(player.id)
+    if (!playerData) {
+      throw new Error("player is not added")
+    }
+
+    const { socket } = playerData
+    if (!socket) {
+      throw new Error("player is not connected to websocket server")
+    }
+
+    if (socket.readyState === socket.CLOSED) {
+      throw new Error("player socket closed")
+    }
+
+    return socket
   }
 
   private addMessageHandler (handler: RawClientMessageHandler): void {

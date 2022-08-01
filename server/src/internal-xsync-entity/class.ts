@@ -26,7 +26,15 @@ import type { FirstPlayerParamToInterface } from "../utils/types"
 import type { PlayerRemoveHandler } from "./types"
 import { dist2dWithRange } from "../utils/dist-2d-range"
 import type { EntityPool } from "../entity-pool"
-import type { EntitySyncedMetaChangeHandler } from "../types"
+import type {
+  EntityNetOwnerChangeHandler,
+  EntityPoolEventHandlers,
+  EntityPoolEventNames,
+  EntityStreamInHandler,
+  EntityStreamOutHandler,
+  EntitySyncedMetaChangeHandler,
+  IEntityPoolEvent,
+} from "../types"
 
 export class InternalXSyncEntity {
   // TODO move in shared
@@ -106,7 +114,12 @@ export class InternalXSyncEntity {
 
   private readonly entitySyncedMetaChangeHandler: EntitySyncedMetaChangeHandler
 
-  private readonly syncedMetaChangePoolHandlers = new Map<EntityPool, EntitySyncedMetaChangeHandler>()
+  private readonly entityEventsPoolHandlers: EntityPoolEventHandlers = {
+    streamIn: new Map(),
+    streamOut: new Map(),
+    syncedMetaChange: new Map(),
+    netOwnerChange: new Map(),
+  }
 
   constructor (
     streamDelay: number,
@@ -166,8 +179,9 @@ export class InternalXSyncEntity {
     this.entitySyncedMetaChangeHandler = (entity, changedMeta, byPlayer) => {
       entitySyncedMetaChange?.(entity, changedMeta, byPlayer)
 
-      const handler = this.syncedMetaChangePoolHandlers.get(entity.pool)
-      handler?.(entity, changedMeta, byPlayer)
+      this.entityEventsPoolHandlers.syncedMetaChange
+        .get(entity.pool)
+        ?.(entity, changedMeta, byPlayer)
     }
   }
 
@@ -227,8 +241,19 @@ export class InternalXSyncEntity {
     }
   }
 
-  public onEntitySyncedMetaChangePool (entityPool: EntityPool, handler: EntitySyncedMetaChangeHandler): void {
-    this.syncedMetaChangePoolHandlers.set(entityPool, handler)
+  public addEntityPoolEventHandlers (entityPool: EntityPool, handlers: Partial<IEntityPoolEvent>): void {
+    for (const _event in handlers) {
+      const event = _event as EntityPoolEventNames
+
+      this.entityEventsPoolHandlers[event].set(
+        entityPool,
+        // TODO: fix this shit
+        handlers[event] as EntitySyncedMetaChangeHandler &
+        EntityStreamInHandler &
+        EntityStreamOutHandler &
+        EntityNetOwnerChangeHandler,
+      )
+    }
   }
 
   private emitWSPlayer <K extends WSClientOnServerEvents> (
@@ -322,7 +347,11 @@ export class InternalXSyncEntity {
     this.emitWSPlayer(
       player,
       WSClientOnServerEvents.EntitiesStreamIn,
-      this.convertEntitiesToWSCreate(entities, player),
+      this.convertEntitiesToWSCreate(entities, player, ({ publicInstance }) => {
+        this.entityEventsPoolHandlers.streamIn
+          .get(publicInstance.pool)
+          ?.(publicInstance, player)
+      }),
     )
   }
 
@@ -332,7 +361,14 @@ export class InternalXSyncEntity {
     this.emitWSPlayer(
       player,
       WSClientOnServerEvents.EntitiesStreamOut,
-      this.convertEntitiesToIds(entities),
+      this.convertEntitiesToIds(
+        entities,
+        ({ publicInstance }) => {
+          this.entityEventsPoolHandlers.streamOut
+            .get(publicInstance.pool)
+            ?.(publicInstance, player)
+        },
+      ),
     )
   }
 
@@ -367,6 +403,10 @@ export class InternalXSyncEntity {
 
       entity.netOwnerChange(newNetOwner)
       this.netOwnerChangeHandler?.(entity.publicInstance, newNetOwner, oldNetOwner)
+
+      this.entityEventsPoolHandlers.netOwnerChange
+        .get(entity.publicInstance.pool)
+        ?.(entity.publicInstance, newNetOwner, oldNetOwner)
     }
 
     for (const [player, data] of WSEntitiesData) {
@@ -374,20 +414,24 @@ export class InternalXSyncEntity {
     }
   }
 
-  private convertEntitiesToIds (entities: InternalEntity[]): number[] {
-    return entities.map(({ id }) => id)
+  private convertEntitiesToIds (entities: InternalEntity[], callback?: (entity: InternalEntity) => void): number[] {
+    return entities.map((entity) => {
+      callback?.(entity)
+      return entity.id
+    })
   }
 
-  private convertEntitiesToWSCreate (entities: InternalEntity[], player: alt.Player): WSEntityCreate[] {
-    return entities.map((
-      {
+  private convertEntitiesToWSCreate (entities: InternalEntity[], player: alt.Player, callback?: (entity: InternalEntity) => void): WSEntityCreate[] {
+    return entities.map((entity) => {
+      const {
         poolId,
         id,
         pos,
         syncedMeta,
         disabledMigration,
         netOwner,
-      }) => {
+      } = entity
+
       const entityCreate: WSEntityCreate = [
         poolId,
         id,
@@ -399,6 +443,8 @@ export class InternalXSyncEntity {
         // netOwnered param
         entityCreate.push(1 as WSBoolean)
       }
+
+      callback?.(entity)
 
       return entityCreate
     })

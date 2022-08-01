@@ -419,10 +419,10 @@ class StreamerWorker {
 
     // { [pool id]: player's streamed in number of entities }
     const poolsStreamIn: Record<number, number> = {}
-
     for (const poolId in this.pools) {
       poolsStreamIn[poolId] = 0
     }
+
     for (let i = 0; i < sortedEntities.length; i++) {
       const arrEntity = sortedEntities[lastIdx]
       const {
@@ -436,6 +436,7 @@ class StreamerWorker {
         disabledMigration,
       } = arrEntity
 
+      // #region netowner migration shit
       if (this.netOwnerLogicEnabled) {
         if (
           !disabledMigration &&
@@ -457,7 +458,9 @@ class StreamerWorker {
           }
         }
       }
+      // #endregion netowner migration shit
 
+      // #region streaming shit
       if (dist > streamRange) {
         lastIdx++
         this.streamOutEntityPlayer(
@@ -467,6 +470,22 @@ class StreamerWorker {
         continue
       }
 
+      const poolStreamIn = poolsStreamIn[poolId] + 1
+
+      if (poolStreamIn > this.pools[poolId].maxStreamedIn) {
+        continue
+      }
+
+      lastIdx++
+
+      poolsStreamIn[poolId] = poolStreamIn
+
+      this.streamInEntityPlayer(
+        playerId, arrEntity, streamedEntityIds, streamInIds,
+      )
+      // #endregion streaming shit
+
+      // #region netowner migration shit
       if (this.netOwnerLogicEnabled) {
         if (
           !disabledMigration &&
@@ -517,20 +536,7 @@ class StreamerWorker {
           }
         }
       }
-
-      const poolStreamIn = poolsStreamIn[poolId] + 1
-
-      if (poolStreamIn > this.pools[poolId].maxStreamedIn) {
-        continue
-      }
-
-      lastIdx++
-
-      poolsStreamIn[poolId] = poolStreamIn
-
-      this.streamInEntityPlayer(
-        playerId, arrEntity, streamedEntityIds, streamInIds,
-      )
+      // #endregion netowner migration shit
     }
 
     for (let i = lastIdx; i < sortedEntities.length; i++) {

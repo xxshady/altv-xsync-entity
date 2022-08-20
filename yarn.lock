@@ -1141,10 +1141,10 @@ ajv@^8.0.1:
     require-from-string "^2.0.2"
     uri-js "^4.2.2"
 
-altv-xlogger@^1.0.4:
-  version "1.0.6"
-  resolved "https://registry.yarnpkg.com/altv-xlogger/-/altv-xlogger-1.0.6.tgz#be659c8d5bd80f515a9aeb74ccc58cacafdfa1a6"
-  integrity sha512-i8j8itKRvnosMmtb6hmE2lnD1wRWV6oqqlcBhxMlKoh1vf9E1S9lFlWOReM2I7yWHkbDMp98w7CW/xb+7gghww==
+altv-xlogger@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/altv-xlogger/-/altv-xlogger-2.1.0.tgz#8fe530e217ce04752fc7740ebfaf7b73ae5afc6c"
+  integrity sha512-lV2Q/48zDzYuJiw7fo8LRllW2ksm6bpY54CW0I5ejGUfVSSBq/XeXhgKNNvgoPPd7U21QgWML9XjGswuupuOng==
 
 ansi-colors@^4.1.1:
   version "4.1.1"

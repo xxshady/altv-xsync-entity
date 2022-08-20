@@ -22,7 +22,7 @@
     "@types/ws": "^8.2.0",
     "@typescript-eslint/eslint-plugin": "^4.33.0",
     "@typescript-eslint/parser": "^4.33.0",
-    "altv-xlogger": "^1.0.4",
+    "altv-xlogger": "^2.1.0",
     "dts-bundle-generator": "^5.9.0",
     "esbuild": "^0.12.29",
     "eslint": "^7.30.0",

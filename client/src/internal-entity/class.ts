@@ -1,14 +1,11 @@
 import type * as alt from "alt-client"
-import { createLogger, LogLevel } from "altv-xlogger"
+import { Logger } from "altv-xsync-entity-shared"
 import type { EntityData } from "altv-xsync-entity-shared"
 import type { Entity } from "../entity"
 import type { IEntityClass } from "../internal-entity-pool"
 import type { IEntityEventHandlers, ParametersExceptFirst } from "./types"
 
-const log = createLogger(
-  "xsync",
-  { logLevel: ___DEV_MODE ? LogLevel.Info : LogLevel.Warn },
-)
+const log = new Logger("internal-entity")
 
 export class InternalEntity<T extends EntityData = EntityData> {
   private static readonly publicInternals = new Map<Entity, InternalEntity>()

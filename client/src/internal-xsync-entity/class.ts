@@ -7,13 +7,13 @@ import type {
   WSBoolean,
 } from "altv-xsync-entity-shared"
 import {
+  Logger,
   WSServerOnClientEvents,
   WSVectors,
   ClientOnServerEvents,
   WSClientOnServerEvents,
 } from "altv-xsync-entity-shared"
 import { WSClient } from "../ws-client"
-import { createLogger, LogLevel } from "altv-xlogger"
 import { InternalEntityPool } from "../internal-entity-pool"
 import { getServerIp } from "../utils/get-server-ip"
 import type { INetOwnerLogicOptions } from "../xsync-entity/types"
@@ -34,17 +34,14 @@ export class InternalXSyncEntity {
     return _instance
   }
 
-  private readonly log = createLogger("xsync > main", {
-    logLevel: ___DEV_MODE ? LogLevel.Info : LogLevel.Warn,
-  })
-
+  private readonly log = new Logger("xsync > main")
   private readonly entityPools: Record<InternalEntityPool["id"], InternalEntityPool> = {}
   private readonly netOwnerChangeHandler?: INetOwnerLogicOptions["entityNetOwnerChange"]
   private readonly netOwneredEntityIds = new Set<number>()
 
   private readonly WSEventHandlers: IWSClientOnServerEvent = {
     [WSClientOnServerEvents.EntitiesStreamIn]: (entities) => {
-      this.log.log(`stream in amount of entities: ${entities.length}`)
+      this.log.info(`stream in amount of entities: ${entities.length}`)
 
       for (let i = 0; i < entities.length; i++) {
         const [poolId, entityId, pos, syncedMeta, netOwnered] = entities[i]
@@ -65,7 +62,7 @@ export class InternalXSyncEntity {
           syncedMeta,
         )
 
-        this.log.log("stream in id:", entity.id, "type:", entityPool.EntityClass.name)
+        this.log.info("stream in id:", entity.id, "type:", entityPool.EntityClass.name)
 
         entityPool.streamInEntity(entity)
 
@@ -76,14 +73,14 @@ export class InternalXSyncEntity {
     },
 
     [WSClientOnServerEvents.EntitiesStreamOut]: (entityIds) => {
-      this.log.log(`stream out amount of entities: ${entityIds.length}`)
+      this.log.info(`stream out amount of entities: ${entityIds.length}`)
 
       for (let i = 0; i < entityIds.length; i++) {
         const entity = InternalEntityPool.entities[entityIds[i]]
 
         if (!entity) continue
 
-        this.log.log("stream out id:", entity.id, "type:", entity.publicInstance.constructor?.name)
+        this.log.info("stream out id:", entity.id, "type:", entity.publicInstance.constructor?.name)
 
         this.removeNetOwneredEntity(entity)
         InternalEntityPool.streamOutEntity(entityIds[i])
@@ -185,7 +182,7 @@ export class InternalXSyncEntity {
       fullServerUrl = `${serverUrl}`
     }
 
-    this.log.log("onAddPlayer", authCode, serverUrl, fullServerUrl)
+    this.log.info("onAddPlayer", authCode, serverUrl, fullServerUrl)
 
     const ws = new WSClient<IWSClientOnServerEvent>(fullServerUrl, authCode, {
       events: this.WSEventHandlers,
@@ -196,7 +193,7 @@ export class InternalXSyncEntity {
   }
 
   private onWSClose () {
-    this.log.log("on ws close destroy entities")
+    this.log.info("on ws close destroy entities")
 
     // TODO destroy only streamed in entities
     for (const entityId in InternalEntityPool.entities) {

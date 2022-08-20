@@ -4,6 +4,7 @@
     "lib": ["ESNext"],
     "typeRoots": [
       "../node_modules/@altv",
+      "../types",
     ],
   },
   "include": [

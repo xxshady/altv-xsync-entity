@@ -1,10 +1,10 @@
-import { createLogger } from "altv-xlogger"
+import { Logger } from "../logger"
 import type { Events } from "./types"
 // import * as alt from "alt-shared"
 // import { WSClientOnServerEvents, WSServerOnClientEvents } from "../ws-events"
 
 export class MessageEventsManager<T extends Events = Events> {
-  private readonly log = createLogger("xsync:message-manager")
+  private readonly log = new Logger("xsync:message-manager")
   private readonly eventsHandlers: T
 
   constructor (events: T) {

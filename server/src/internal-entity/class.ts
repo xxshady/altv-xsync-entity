@@ -1,5 +1,5 @@
 import type * as alt from "alt-server"
-import { createLogger } from "altv-xlogger"
+import { Logger } from "altv-xlogger"
 import type { EntityData } from "altv-xsync-entity-shared"
 import type { Entity } from "../entity"
 import { InternalXSyncEntity } from "../internal-xsync-entity"
@@ -7,7 +7,7 @@ import type { InternalEntityDict } from "./types"
 
 export class InternalEntity {
   public static readonly all: Readonly<InternalEntityDict> = {}
-  private static readonly log = createLogger("xsync:internal-entity")
+  private static readonly log = new Logger("xsync:internal-entity")
 
   public netOwner: alt.Player | null = null
   public disabledMigration = false

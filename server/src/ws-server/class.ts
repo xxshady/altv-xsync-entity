@@ -11,13 +11,12 @@ import http from "http"
 import https from "https"
 import type net from "net"
 import uuidv4 from "../utils/uuidv4"
-import { createLogger } from "altv-xlogger"
-import { MessageEventsManager } from "altv-xsync-entity-shared"
+import { Logger, MessageEventsManager } from "altv-xsync-entity-shared"
 import fs from "fs"
 import { WSConnectTimeoutError } from "./errors"
 
 export class WSServer {
-  private readonly log = createLogger("xsync:ws")
+  private readonly log = new Logger("xsync:wss")
   /**
    * key number - player.id
    */
@@ -44,19 +43,19 @@ export class WSServer {
       socketClose,
     }: IWebSocketServerOptions,
   ) {
-    this.log.log(`init server on port: ${port}...`)
+    this.log.info(`init server on port: ${port}...`)
 
     let server: https.Server | http.Server
 
     if (useWss) {
-      this.log.log("init wss (HTTPS) server")
+      this.log.info("init wss (HTTPS) server")
       server = new https.Server({
         cert: fs.readFileSync(certPath),
         key: fs.readFileSync(keyPath),
       })
     }
     else {
-      this.log.log("init ws (HTTP) server")
+      this.log.info("init ws (HTTP) server")
       server = new http.Server()
     }
 
@@ -101,7 +100,7 @@ export class WSServer {
       authCode,
     })
 
-    // this.log.log("[addPlayer]", `player id: ${player.id}`, "auth code:", authCode)
+    // this.log.info("[addPlayer]", `player id: ${player.id}`, "auth code:", authCode)
 
     return authCode
   }
@@ -177,7 +176,7 @@ export class WSServer {
   }
 
   private onHttpListening () {
-    this.log.log(`~gl~http(s) server started listening on port: ${this.port}`)
+    this.log.infoUnchecked(`~gl~http(s) server started listening on port: ${this.port}`)
   }
 
   private onHttpUpgrade (
@@ -194,7 +193,7 @@ export class WSServer {
       authcode: authCode,
     } = headers
 
-    // this.log.log("[upgrade] headers:", "playerId:", playerId, "authCode:", authCode)
+    // this.log.info("[upgrade] headers:", "playerId:", playerId, "authCode:", authCode)
 
     if (!(
       playerId &&
@@ -298,7 +297,7 @@ export class WSServer {
       this.playerConnectWaits.delete(player)
     }
 
-    this.log.log(`~gl~successful connection~w~ player id: ${playerId}`)
+    this.log.info(`~gl~successful connection~w~ player id: ${playerId}`)
   }
 
   private onSocketMessage (
@@ -312,9 +311,9 @@ export class WSServer {
       return
     }
 
-    // this.log.log("[onSocketMessage]", new Date().getMilliseconds())
+    // this.log.info("[onSocketMessage]", new Date().getMilliseconds())
 
-    // this.log.log("[onSocketMessage]", `player: ${player.id}`, "type:", data?.constructor?.name ?? typeof data, "data:")
+    // this.log.info("[onSocketMessage]", `player: ${player.id}`, "type:", data?.constructor?.name ?? typeof data, "data:")
     // console.debug(data, "bytes:", data.byteLength, Array.from(data as Buffer), data.toString())
 
     // socket.send("ok")

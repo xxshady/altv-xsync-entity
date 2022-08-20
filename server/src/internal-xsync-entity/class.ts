@@ -10,13 +10,13 @@ import type {
   WSEntityNetOwner,
 } from "altv-xsync-entity-shared"
 import {
+  Logger,
   WSServerOnClientEvents,
   WSVectors,
   ClientOnServerEvents,
   WSClientOnServerEvents,
 } from "altv-xsync-entity-shared"
 import { Players } from "../players"
-import { createLogger, LogLevel } from "altv-xlogger"
 import { InternalEntity } from "../internal-entity"
 import type {
   INetOwnerLogicOptions,
@@ -55,9 +55,7 @@ export class InternalXSyncEntity {
   public readonly idProvider = new IdProvider()
   public readonly players = new Players()
 
-  private readonly log = createLogger("xsync:internal", {
-    logLevel: ___DEV_MODE ? LogLevel.Info : LogLevel.Warn,
-  })
+  private readonly log = new Logger("xsync")
 
   private readonly wsServerUrl: string
 
@@ -103,7 +101,7 @@ export class InternalXSyncEntity {
 
       const result = this.requestUpdateEntitySyncedMetaHandler(entity.publicInstance, player, meta)
       if (!result) {
-        this.log.log(`[RequestUpdateEntitySyncedMeta] canceled, player: ${player.name} entity id: ${entityId}`)
+        this.log.info(`[RequestUpdateEntitySyncedMeta] canceled, player: ${player.name} entity id: ${entityId}`)
         return
       }
 
@@ -145,11 +143,7 @@ export class InternalXSyncEntity {
 
     this.wsServerUrl = localhost ? `localhost:${port}` : `wss://${domainName}`
 
-    // TODO: add explicit log method to logger
-    const { logLevel } = this.log
-    this.log.logLevel = LogLevel.Info
-    this.log.log(`use client connection url: "${this.wsServerUrl}"`)
-    this.log.logLevel = logLevel
+    this.log.infoUnchecked(`using client connection address: "${this.wsServerUrl}"`)
 
     this.wss = new WSServer(
       port,
@@ -305,7 +299,7 @@ export class InternalXSyncEntity {
   }
 
   private async addPlayer (player: alt.Player, connectTimeoutMs?: number) {
-    this.log.log(`~gl~addPlayer:~w~ ${player.valid ? player.id : "unknown id"}`)
+    this.log.info(`~gl~addPlayer:~w~ ${player.valid ? player.id : "unknown id"}`)
 
     const authCode = this.wss.addPlayer(player)
 
@@ -320,13 +314,13 @@ export class InternalXSyncEntity {
 
     await this.wss.waitPlayerConnect(player, connectTimeoutMs)
 
-    this.log.log("player connected to ws in", +new Date() - start, "ms")
+    this.log.info("player connected to ws in", +new Date() - start, "ms")
 
     this.players.add(player)
   }
 
   private removePlayer (player: alt.Player) {
-    this.log.log(`~yl~removePlayer:~w~ ${player.valid ? player.id : "unknown id"}`)
+    this.log.info(`~yl~removePlayer:~w~ ${player.valid ? player.id : "unknown id"}`)
 
     if (!this.players.has(player)) return
 
@@ -342,7 +336,7 @@ export class InternalXSyncEntity {
   }
 
   private onEntitiesStreamIn (player: alt.Player, entities: InternalEntity[]) {
-    // this.log.log("onEntitiesStreamIn", "player:", player.name, "entities:", entities.map(e => e.id))
+    // this.log.info("onEntitiesStreamIn", "player:", player.name, "entities:", entities.map(e => e.id))
 
     this.emitWSPlayer(
       player,
@@ -356,7 +350,7 @@ export class InternalXSyncEntity {
   }
 
   private onEntitiesStreamOut (player: alt.Player, entities: InternalEntity[]) {
-    // this.log.log("onEntitiesStreamOut", "player:", player.name, "entities:", entities.map(e => e.id))
+    // this.log.info("onEntitiesStreamOut", "player:", player.name, "entities:", entities.map(e => e.id))
 
     this.emitWSPlayer(
       player,

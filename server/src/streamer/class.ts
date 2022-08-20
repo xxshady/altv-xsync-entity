@@ -20,14 +20,12 @@ import type {
   PlayerId,
   PlayersUpdateData,
 } from "./types"
-import { createLogger, LogLevel } from "altv-xlogger"
 import type { Entity } from "../entity"
+import { Logger } from "altv-xsync-entity-shared"
 
 export class Streamer {
   private readonly worker = new Worker()
-  private readonly log = createLogger("xsync:streamer", {
-    logLevel: ___DEV_MODE ? LogLevel.Info : LogLevel.Warn,
-  })
+  private readonly log = new Logger("xsync:streamer")
 
   private readonly currentPlayersUpdate: ICurrentPlayersUpdate = {
     pending: false,

@@ -1,5 +1,4 @@
 import * as alt from "alt-client"
-import { createLogger, LogLevel } from "altv-xlogger"
 import type {
   EventsType,
   EventsTypeAny,
@@ -7,13 +6,12 @@ import type {
   IWebSocketOptions,
 } from "./types"
 import {
+  Logger,
   MessageEventsManager,
 } from "altv-xsync-entity-shared"
 
 export class WSClient<TEvents extends EventsTypeAny> {
-  private readonly log = createLogger("xsync:ws", {
-    logLevel: LogLevel.Info,
-  })
+  private readonly log = new Logger("xsync:ws")
 
   private readonly player = alt.Player.local
   private readonly messageHandlers = new Set<((message: string) => void)>()
@@ -27,7 +25,7 @@ export class WSClient<TEvents extends EventsTypeAny> {
   private connected = false
 
   constructor (url: string, authCode: string, options: IWebSocketOptions<TEvents>) {
-    this.log.log(`connect url: ${url}`)
+    this.log.info(`connect url: ${url}`)
 
     this.client = this.initClient(authCode, url)
     this.waitConnectPromise = this.initWaitConnectPromise()
@@ -66,7 +64,7 @@ export class WSClient<TEvents extends EventsTypeAny> {
 
     client.start()
 
-    this.log.log("started connecting...", new Date().getMilliseconds())
+    this.log.info("started connecting...", new Date().getMilliseconds())
 
     return client
   }
@@ -82,7 +80,7 @@ export class WSClient<TEvents extends EventsTypeAny> {
     this.connected = true
     this.waitConnectPromise.resolve()
 
-    this.log.log("~gl~successful connection~w~ to the server", new Date().getMilliseconds())
+    this.log.info("~gl~successful connection~w~ to the server", new Date().getMilliseconds())
   }
 
   private onClose (code: number, reason: string) {
@@ -94,7 +92,7 @@ export class WSClient<TEvents extends EventsTypeAny> {
   }
 
   private onMessage (message: string) {
-    // this.log.log("[message]", message)
+    // this.log.info("[message]", message)
 
     for (const handler of this.messageHandlers) {
       handler(message)

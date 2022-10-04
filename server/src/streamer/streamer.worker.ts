@@ -275,7 +275,14 @@ class StreamerWorker {
       }
 
       this.players[entity.netOwnerId as number]?.owneredEntityIds.delete(entityId)
-      this.players[playerId].owneredEntityIds.add(entityId)
+
+      const player = this.players[playerId]
+      if (!player) {
+        this.log.error(`[SetEntityNetOwner] unknown player id: ${playerId}`)
+        return
+      }
+
+      player.owneredEntityIds.add(entityId)
 
       arrEntity.netOwnerId = playerId
       arrEntity.disabledMigration = disableMigration

@@ -89,7 +89,14 @@ export class WSServer {
   public addPlayer (player: alt.Player): string {
     const { id } = player
 
-    if (this.players.has(id)) {
+    let playerData = this.players.get(id)
+
+    if (playerData?.socket === null) {
+      this.log.info("[addPlayer] playerData?.socket === null")
+      playerData = undefined
+    }
+
+    if (playerData) {
       throw new Error("player already added")
     }
 

@@ -1,5 +1,5 @@
 import type * as alt from "alt-server"
-import type { WebSocket } from "ws"
+import type * as ws from "ws-esm"
 
 export interface IConnectionExtraReq {
   headers?: {
@@ -9,7 +9,7 @@ export interface IConnectionExtraReq {
 }
 
 export interface IWebSocketPlayer {
-  socket: WebSocket | null
+  socket: ws.WebSocket | null
   authCode: string
 }
 

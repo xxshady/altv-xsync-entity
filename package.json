@@ -10,7 +10,7 @@
   "scripts": {
     "build": "lerna run build --parallel",
     "types": "lerna run types --parallel",
-    "dev": "lerna run watch --parallel",
+    "dev": "lerna run dev",
     "publ": "yarn build && yarn types && lerna publish"
   },
   "type": "module",

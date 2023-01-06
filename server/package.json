@@ -14,7 +14,7 @@
   },
   "type": "module",
   "scripts": {
-    "watch": "node --es-module-specifier-resolution=node build.js -w",
+    "dev": "node --es-module-specifier-resolution=node build.js -w",
     "build": "node --es-module-specifier-resolution=node build.js",
     "types": "dts-bundle-generator -o dist/main.d.ts --inline-declare-externals src/main.ts"
   }

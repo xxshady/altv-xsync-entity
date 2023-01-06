@@ -1,17 +1,5 @@
 {
   "version": "3.2.6",
   "npmClient": "yarn",
-  "command": {
-    "bootstrap": {
-      "ignore": "component-*",
-      "npmClientArgs": [
-        "--no-package-lock"
-      ]
-    }
-  },
-  "packages": [
-    "shared",
-    "client",
-    "server"
-  ]
+  "useWorkspaces": true
 }

@@ -97,7 +97,20 @@ export class WSServer {
     }
 
     if (playerData) {
-      throw new Error("player already added")
+
+      // TEST
+      const { player: oldPlayer } = playerData
+      this.log.error(
+        'player already added | old playerData.player:', 
+        oldPlayer.valid
+          ? `<${oldPlayer.name}_${oldPlayer.id}_${oldPlayer.socialID}>`
+          : "<invalid>",
+        '| new player:', player.valid
+          ? `<${player.name}_${player.id}_${player.socialID}>`
+          : "<invalid>",
+      )
+
+      // throw new Error("player already added")
     }
 
     const authCode = this.generatePlayerAuthCode()
@@ -105,6 +118,7 @@ export class WSServer {
     this.players.set(id, {
       socket: null,
       authCode,
+      player,
     })
 
     // this.log.info("[addPlayer]", `player id: ${player.id}`, "auth code:", authCode)

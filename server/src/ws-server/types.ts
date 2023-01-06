@@ -11,6 +11,7 @@ export interface IConnectionExtraReq {
 export interface IWebSocketPlayer {
   socket: ws.WebSocket | null
   authCode: string
+  player: alt.Player
 }
 
 export type RawClientMessageHandler = (player: alt.Player, message: Buffer) => void

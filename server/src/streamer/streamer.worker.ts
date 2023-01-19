@@ -229,7 +229,17 @@ class StreamerWorker {
       if (!entity) return
 
       for (const playerId of entity.streamPlayerIds) {
-        this.players[playerId]?.streamedEntityIds.delete(entityId)
+        const player = this.players[playerId]
+        if (!player) continue
+
+        // this.log.log(
+        //   'StreamerWorkerEvents.DestroyEntity', 
+        //   'entityId:', entityId,
+        //   'player:', player,
+        // )
+
+        player.streamedEntityIds.delete(entityId)
+        player.owneredEntityIds.delete(entityId)
       }
 
       if (this.netOwnerLogicEnabled) {

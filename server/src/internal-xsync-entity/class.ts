@@ -250,6 +250,23 @@ export class InternalXSyncEntity {
     }
   }
 
+  public initClientConnect (player: alt.Player): void {
+    this.addPlayer(player).catch((e) => {
+      if (e instanceof WSConnectTimeoutError) return
+      this.log.error("initClientConnect error:", e.stack)
+    })
+  }
+
+  // TODO: added for testing
+  public removePlayerFromStreamer(player: alt.Player) {
+    try {
+      this.removePlayer(player)
+    }
+    catch (e) {
+      this.log.error('removePlayerFromStreamer error:', (e as any)?.stack)
+    }
+  }
+
   private emitWSPlayer <K extends WSClientOnServerEvents> (
     player: alt.Player,
     eventName: K,
@@ -285,13 +302,6 @@ export class InternalXSyncEntity {
     }
 
     alt.on("playerDisconnect", this.onPlayerDisconnect.bind(this))
-  }
-
-  public initClientConnect (player: alt.Player): void {
-    this.addPlayer(player).catch((e) => {
-      if (e instanceof WSConnectTimeoutError) return
-      this.log.error("initClientConnect error:", e.stack)
-    })
   }
 
   private onPlayerDisconnect (player: alt.Player) {

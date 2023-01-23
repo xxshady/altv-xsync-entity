@@ -406,7 +406,14 @@ export class Streamer {
       const playersData: PlayersUpdateData = []
 
       for (let i = 0; i < players.length; i++) {
-        const { id, pos, dimension } = players[i]
+        const player = players[i]
+        if (!player.valid) {
+          this.log.error('[playersUpdateProcess] invalid player under index:', i)
+          InternalXSyncEntity.instance.removePlayerFromStreamer(player)
+          continue
+        }
+
+        const { id, pos, dimension } = player
         const pos2d = {
           x: pos.x,
           y: pos.y,

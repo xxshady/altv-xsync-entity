@@ -408,8 +408,8 @@ export class Streamer {
       for (let i = 0; i < players.length; i++) {
         const player = players[i]
         if (!player.valid) {
-          this.log.error('[playersUpdateProcess] invalid player under index:', i)
-          InternalXSyncEntity.instance.removePlayerFromStreamer(player)
+          this.log.error('[playersUpdateProcess] invalid bitch detected under index:', i)
+          InternalXSyncEntity.instance.removeInvalidBitchFromPlayers(player)
           continue
         }
 

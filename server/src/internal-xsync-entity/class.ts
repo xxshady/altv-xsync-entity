@@ -258,9 +258,9 @@ export class InternalXSyncEntity {
   }
 
   // TODO: added for testing
-  public removePlayerFromStreamer(player: alt.Player) {
+  public removeInvalidBitchFromPlayers(invalidBitch: alt.Player) {
     try {
-      this.removePlayer(player)
+      this.players.removeInvalidBitch(invalidBitch)
     }
     catch (e) {
       this.log.error('removePlayerFromStreamer error:', (e as any)?.stack)
